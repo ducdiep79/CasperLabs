@@ -62,8 +62,12 @@ Success!
 
 ##### Step 6: Observe
 
-See the instructions [here](QUERYING.md).
-
+You can monitor the outcome of the deploys using `casperlabs-client`:
+```
+casperlabs-client\ 
+        --host deploy.casperlabs.io \ 
+        --port 40401 show-deploy <deploy-hash>
+```
 
 ##### Step 7: Deploy `countercall.wasm`
 
@@ -82,13 +86,15 @@ You should see the following output:
 Success!
 ```
 
-###### Alternative way of creating, signing and deploying contracts
+###### Alternative way of creating, signing, and deploying contracts
 
-Every account can associate multiple keys with it and give each a weight. Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys a deploy has to be signed by corresponding private keys. `deploy` command does it all (creates a deploy, signs it and deploys to the node) but doesn't allow for signing with multiple keys. Therefore we split `deploy` into three separate commands:
+Every account can associate multiple keys with it and give each a weight. Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys a deploy has to be signed by corresponding private keys. The `deploy` command does it all (creates a deploy, signs it, deploys to the node, and allows for monitoring the outcome of deploys) but doesn't allow for signing with multiple keys. We split `deploy` into the following separate commands:
 * `make-deploy`  - creates a deploy from input parameters
 * `sign-deploy`  - signs a deploy with given private key
 * `print-deploy` - prints information of a deploy
 * `send-deploy`  - sends a deploy to CasperLabs node
+* `show-deploy`  - monitors the outcome of a deploy
+
 
 Commands read input deploy from both a file (`-i` flag) and STDIN. They can also write to both file and STDOUT.
 
@@ -149,9 +155,19 @@ casperlabs-client send-deploy
 
 For more detailed description, use `--help` flag (`casper-client --help`).
 
+
 ##### Step 8: Observe
 
-See the instructions [here](QUERYING.md).
+**Monitoring deploys**
+
+e.g., you can ensure that justification timestamps are not in the future (a block with a timestamp higher than its justifications is not created)
+```
+casperlabs-client\ 
+        --host deploy.casperlabs.io \ 
+        --port 40401 show-deploy <deploy-hash>
+```
+You can also retrieve further information from our platform with our APIs, et. al.: **See** additional instructions [here](QUERYING.md).
+
 
 ###### Advanced deploy options
 

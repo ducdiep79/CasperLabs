@@ -11,7 +11,7 @@
   - You will need these key files to interact with the network; give some consideration to where you save them
 * Navigate to [Faucet](https://clarity.casperlabs.io/#/faucet), select your new account, and click [Request Tokens]
   - Note that a "token" obtained on devnet has no monetary value whatsoever
-* The request will appear in the "Recent Faucet Requests" table; wait for the green check mark to appear in the "Status" column
+* The request will appear in the "Recent Faucet Requests" table; wait for the green check mark to appear in the "Status" column 
 
 #### Checking the balance of an account
 
@@ -41,6 +41,14 @@ casperlabs-client \
         --session my_contract.wasm \
         --private-key account.private.key
 ```
+
+* You can also monitor the outcome of deploys using the casperlabs-client:
+```
+casperlabs-client\ 
+        --host deploy.casperlabs.io \ 
+        --port 40401 show-deploy <deploy-hash>
+```
+
 
 ### Bonding
 
