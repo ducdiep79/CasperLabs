@@ -1,3 +1,7 @@
+//! Contains low-level bindings for host-side ("external") functions.
+//!
+//! Generally should not be used directly.  See the [`contract_api`](crate::contract_api) for
+//! high-level bindings suitable for writing smart contracts.
 extern "C" {
     pub fn read_value(key_ptr: *const u8, key_size: usize, output_size: *mut usize) -> i32;
     pub fn read_value_local(key_ptr: *const u8, key_size: usize, output_size: *mut usize) -> i32;
@@ -56,7 +60,7 @@ extern "C" {
     pub fn has_key(name_ptr: *const u8, name_size: usize) -> i32;
     pub fn put_key(name_ptr: *const u8, name_size: usize, key_ptr: *const u8, key_size: usize);
     pub fn revert(status: u32) -> !;
-    pub fn is_valid(value_ptr: *const u8, value_size: usize) -> i32;
+    pub fn is_valid_uref(uref_ptr: *const u8, uref_size: usize) -> i32;
     pub fn add_associated_key(public_key_ptr: *const u8, weight: i32) -> i32;
     pub fn remove_associated_key(public_key_ptr: *const u8) -> i32;
     pub fn update_associated_key(public_key_ptr: *const u8, weight: i32) -> i32;
