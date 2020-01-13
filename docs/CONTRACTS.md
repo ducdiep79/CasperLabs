@@ -1,4 +1,4 @@
-## Deploying Contracts
+# Deploying Contracts
 
 ## Prerequisites
 
@@ -62,7 +62,10 @@ Success!
 
 ##### Step 6: Observe
 
+See the instructions [here](QUERYING.md).
+
 You can monitor the outcome of the deploys using `casperlabs-client`:
+
 ```
 casperlabs-client\ 
         --host deploy.casperlabs.io \ 
@@ -92,14 +95,11 @@ Every account can associate multiple keys with it and give each a weight. Collec
 
 The `deploy` command does it all (creates a deploy, signs it, deploys to the node, and allows for monitoring the outcome of deploys) but doesn't allow for signing with multiple keys. 
 
-We split `deploy` into the following separate commands:
-
 * `make-deploy`  - creates a deploy from input parameters
 * `sign-deploy`  - signs a deploy with given private key
 * `print-deploy` - prints information of a deploy
 * `send-deploy`  - sends a deploy to CasperLabs node
 * `show-deploy`  - monitors the outcome of a deploy
-
 
 Commands read input deploy from both a file (`-i` flag) and STDIN. They can also write to both file and STDOUT.
 
@@ -163,6 +163,8 @@ For more detailed description, use `--help` flag (`casper-client --help`).
 
 ##### Step 8: Observe
 
+See the instructions [here](QUERYING.md).
+
 **Monitoring deploys**
 
 e.g., you can ensure that justification timestamps are not in the future (a block with a timestamp higher than its justifications is not created)
@@ -179,20 +181,15 @@ You can also retrieve further information from our platform with our APIs, et. a
 
 **Stored contracts**
 
-A function that is part of the deployed contract's module
-can be saved on the blockchain with Contract API function `store_function`.
+A function that is part of the deployed contract's module can be saved on the blockchain with Contract API function `store_function`.
 
 Such function becomes a stored contract that can be later called from another contract with `call_contract` or used instead of a WASM file when creating a new deploy on command line.
-
 
 **Contract address**
 
 A contract stored on blockchain with `store_function` has an address, which is a 256 bits long Blake2b hash of the deploy hash and a 32 bits integer function counter.
 
-The function counter is equal `0` for the first function saved
-with `store_function` during execution of a deploy,
-`1` for the second stored function, and so on.
-
+The function counter is equal `0` for the first function saved with `store_function` during execution of a deploy, `1` for the second stored function, and so on.
 
 **Calling a stored contract using its address**
 
