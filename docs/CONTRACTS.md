@@ -254,11 +254,11 @@ by calling Contract API function `get_arg` with index of an argument. First argu
 
 **Time to Live and Deploy Dependency**
 
-`Time to Live`  specifies a duration by which the deploy can be included in a block prior to expiration. The node will not accept deploys with deploy.timestamp greater than some configurable number of milliseconds in the future (relative to its current time).  This maximum future time is configurable because this parameter is not visible at the protocol level since deploys can only go into blocks after their deploy.timestamp. This value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block. 
+**Time to Live** specifies a duration by which the deploy can be included in a block prior to expiration. The node will not accept deploys with deploy.timestamp greater than some configurable number of milliseconds in the future (relative to its current time).  This maximum future time is configurable because this parameter is not visible at the protocol level since deploys can only go into blocks after their deploy.timestamp. This value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block. 
 
 `--ttl-millis` passes the argument set Time to live, Time (in milliseconds) that the deploy will remain valid for. If no parameter is specified, a default (defined in the Chainspec - Genesis block) will be used.
 
-Deploy Dependency provides a parameter for a mechanism implemented to explicitly enforce an ordering to deploys. This is important since sometimes order matters. 
+**Deploy Dependency** provides a parameter for a mechanism implemented to explicitly enforce an ordering to deploys. This is important since sometimes order matters. 
 
  `--dependencies`  passes the argument list of deploy hashes (base16 encoded) which must be executed before this deploy.
 
