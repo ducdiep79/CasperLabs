@@ -10,7 +10,9 @@
 * Install [`rustup`](https://rustup.rs/).
 * Build the [`casperlabs-client`](BUILD.md#build-the-client).
 
-If you build from source, you will need to add the build directories to your `PATH`, for example:
+If you build from source, you will need to add the build directories to your `PATH`, 
+
+For example:
 ```
 export PATH="<path-to-CasperLabs-repo>/client/target/universal/stage/bin:$PATH"
 ```
@@ -41,7 +43,7 @@ Create an account, which automatically creates a new keypair.  This keypair shou
 
 ##### Step 4: Add coins to the account
 
-You can add coins to this account using the [faucet](https://clarity.casperlabs.io/#/faucet).
+You can add coins to the account using the [faucet](https://clarity.casperlabs.io/#/faucet).
 
 ##### Step 5: Deploy `counterdefine.wasm`
 
@@ -84,9 +86,9 @@ Success!
 
 ###### Alternative way of creating, signing, and deploying contracts
 
-Every account can associate multiple keys with it and give each key a weight. The Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys a deploy has to be signed by corresponding private keys.
+Every account can associate multiple keys with it and give each key a weight. The Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys, a deploy has to be signed by corresponding private keys.
 
-The `deploy` command does it all (creates a deploy, signs it, deploys to the node, and allows for monitoring the outcome of deploys) but doesn't allow for signing with multiple keys.
+The `deploy` command does it all (creates a deploy, signs it, deploys to the node, and allows for monitoring the outcome of deploys), but doesn't allow for signing with multiple keys.
 
 To make a deploy signed with multiple keys: first make the deploy with `make-deploy`, sign it with the keys calling `sign-deploy` for each key, and then send it to the node with `send-deploy`.
 
@@ -200,11 +202,11 @@ The function counter is equal `0` for the first function saved with the `store_f
 Contract address is a cryptographic hash uniquely identifyiyng a stored contract in the system. 
 Thus, it can be used to call the stored contract directly when creating a deploy, e.g. on command line, or from another contract.
 
-`casperlabs-client` `deploy` command accepts argument `--session-hash`
-which can be used to create a deploy using a stored contract
-instead of a file with a compiled WASM module. Its value should be a base16 representation of the contract address,
+`casperlabs-client` `deploy` command accepts argument `--session-hash` which can be used to create a deploy using a stored contract instead of a file with a compiled WASM module. Its value should be a base16 representation of the contract address, 
 
-for example: `--session-hash 2358448f76c8b3a9e263571007998791a815e954c3c3db2da830a294ea7cba65`.
+For example:
+
+`--session-hash 2358448f76c8b3a9e263571007998791a815e954c3c3db2da830a294ea7cba65`.
 
 
 `payment-hash` is an option equivalent to `--session-hash`
@@ -226,8 +228,9 @@ The function is stored on blockchain with `store_function`. Next, a call to `add
 
 ```
 
-`casperlabs-client` `deploy` command accepts argument `--session-name`
-which can be used to refer to a stored contract by its name, for example `--session-name counter`. 
+`casperlabs-client` `deploy` command accepts argument `--session-name` which can be used to refer to a stored contract by its name, 
+
+For example `--session-name counter`. 
 
 This option can be used to create a deploy with a stored contract
 acting as the deploy's session contract.
@@ -241,10 +244,9 @@ Note: names are valid only in the context of the account which called `add_uref`
 When a contract is stored with `store_function`  there is a new context created for it, with initial content defined by the map passed to `store_function` as its second argument.
 Later, when the stored contract is called with `call_contract` it is executed in this context.
 
-In contrast, when the same stored contract is called directly,
-for example, its address is passed to `--session-hash` argument of the `deploy` command, the contract will be executed in the context of the account that creates the deploy. 
-The consequence of this is that stateful contracts designed to operate in a specific context may not work as expected when called directly. 
-They may, for instance, attempt to read or modify a `URef` that they expect to exist in their context, but find it missing in the context that they are actually run in, that is of the deployer's account.
+In contrast, when the same stored contract is called directly.  For example, its address is passed to `--session-hash` argument of the `deploy` command, the contract will be executed in the context of the account that creates the deploy. 
+
+The consequence of this is that stateful contracts designed to operate in a specific context may not work as expected when called directly. They may, for instance, attempt to read or modify a `URef` that they expect to exist in their context, but find it missing in the context that they are actually run in, that is of the deployer's account.
 
 **Passing arguments to contracts**
 
@@ -272,8 +274,11 @@ that can be used to specify types and values of contract arguments
 as a serialized sequence of
 [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) values in a [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json), with binary data represented in Base16 format.
 
-For example: `--session-args '[{"name": "amount", "value": {"long_value": 123456}}]'`.
+For example: 
 
+```
+`--session-args '[{"name": "amount", "value": {"long_value": 123456}}]'`.
+```
 
 **Accessing arguments in contracts**
 
@@ -297,7 +302,7 @@ is currently `u64`.
 
 The same can be achieved by declaring return type of `get_arg` explicitly,
 
-for example:
+For example:
 
 ```
 let amount = get_arg::<u64>(0);
