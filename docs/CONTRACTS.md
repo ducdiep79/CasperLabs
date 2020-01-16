@@ -39,9 +39,9 @@ export COUNTER_CALL="$(pwd)/target/wasm32-unknown-unknown/release/counter_call.w
 
 Create an account, which automatically creates a new keypair.  This keypair should be downloaded to the machine where you will deploy contracts.
 
-##### Step 4: Add coins to this account
+##### Step 4: Add coins to the account
 
-Add coins to this account using the [faucet](https://clarity.casperlabs.io/#/faucet).
+You can add coins to this account using the [faucet](https://clarity.casperlabs.io/#/faucet).
 
 ##### Step 5: Deploy `counterdefine.wasm`
 
@@ -64,13 +64,6 @@ Success!
 
 See the instructions [here](QUERYING.md).
 
-You can monitor the outcome of the deploys using `casperlabs-client`:
-
-```
-casperlabs-client\ 
-        --host deploy.casperlabs.io \ 
-        --port 40401 show-deploy <deploy-hash>
-```
 
 ##### Step 7: Deploy `countercall.wasm`
 
@@ -91,9 +84,13 @@ Success!
 
 ###### Alternative way of creating, signing, and deploying contracts
 
-Every account can associate multiple keys with it and give each a weight. Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys a deploy has to be signed by corresponding private keys. 
+Every account can associate multiple keys with it and give each key a weight. The Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys a deploy has to be signed by corresponding private keys.
 
-The `deploy` command does it all (creates a deploy, signs it, deploys to the node, and allows for monitoring the outcome of deploys) but doesn't allow for signing with multiple keys. 
+The `deploy` command does it all (creates a deploy, signs it, deploys to the node, and allows for monitoring the outcome of deploys) but doesn't allow for signing with multiple keys.
+
+To make a deploy signed with multiple keys: first make the deploy with `make-deploy`, sign it with the keys calling `sign-deploy` for each key, and then send it to the node with `send-deploy`.
+
+This following lists commands you can use when deploying contracts:
 
 * `make-deploy`  - creates a deploy from input parameters
 * `sign-deploy`  - signs a deploy with given private key
@@ -149,7 +146,7 @@ casperlabs-client \
     --host localhost \
     send-deploy
 ```
-In the example above there is no `-i` argument, meaning that signed deploy will be read from STDIN.
+In the example above there is no `-i` argument, meaning that the signed deploy will be read from STDIN.
 
 Reading from STDIN and writing to STDOUT allows for piping output from one command to the input of another one (commands are incomplete for better readability):
 ```
@@ -158,43 +155,50 @@ casperlabs-client sign-deploy --private-key [private_key] --public-key [public_k
 casperlabs-client send-deploy
 ```
 
-For more detailed description, use `--help` flag (`casper-client --help`).
+For more detailed description about deploy commands, use the `--help` flag (`casper-client --help`).
 
 
 ##### Step 8: Observe
 
 See the instructions [here](QUERYING.md).
 
-**Monitoring deploys**
+**Monitoring deploy status**
 
-e.g., you can ensure that justification timestamps are not in the future (a block with a timestamp higher than its justifications is not created)
+The `casperlabs-client--help` says that `show-deploy` allows the user to `View properties of a deploy known by Casper on an existing running node`. One of the properties of a deploy is its status which can be one of:
+
+* `PENDING`
+* `PROCESSED`
+* `FINALIZED`
+* `DISCARDED`
+
+See description of each state [here](https://github.com/CasperLabs/CasperLabs/blob/907c46b2c7dc36ad8944b1cd104238122dc2e4ad/protobuf/io/casperlabs/casper/consensus/info.proto#L54).
 
 ```
 casperlabs-client\ 
         --host deploy.casperlabs.io \ 
         --port 40401 show-deploy <deploy-hash>
 ```
-You can also retrieve further information from our platform with our APIs, et. al.: **See** additional instructions [here](QUERYING.md).
+You can also retrieve further information from our platform with our APIs, et. al.: See additional instructions [here](QUERYING.md).
 
 
 ###### Advanced deploy options
 
 **Stored contracts**
 
-A function that is part of the deployed contract's module can be saved on the blockchain with Contract API function `store_function`.
+A function that is part of the deployed contract's module can be saved on the blockchain with the Contract API function `store_function`.
 
-Such function becomes a stored contract that can be later called from another contract with `call_contract` or used instead of a WASM file when creating a new deploy on command line.
+Such function becomes a stored contract that can be later called from another contract with `call_contract` or used instead of a WASM file when creating a new deploy on the command line.
 
 **Contract address**
 
-A contract stored on blockchain with `store_function` has an address, which is a 256 bits long Blake2b hash of the deploy hash and a 32 bits integer function counter.
+A contract stored on the blockchain with `store_function` has an address, a 256 bits long Blake2b hash of the deploy hash and a 32 bits integer function counter.
 
-The function counter is equal `0` for the first function saved with `store_function` during execution of a deploy, `1` for the second stored function, and so on.
+The function counter is equal `0` for the first function saved with the `store_function` during execution of a deploy, `1` for the second stored function, and so on.
 
 **Calling a stored contract using its address**
 
 Contract address is a cryptographic hash uniquely identifyiyng a stored contract in the system. 
-Thus, it can be used to call the stored contract, both directly when creating a deploy, e.g. on command line or from another contract.
+Thus, it can be used to call the stored contract directly when creating a deploy, e.g. on command line, or from another contract.
 
 `casperlabs-client` `deploy` command accepts argument `--session-hash`
 which can be used to create a deploy using a stored contract
@@ -208,14 +212,11 @@ but for specifying address of payment contract.
 
 **Calling a stored contract by name**
 
-For convenience, a contract address can be 
-associated with a name in the context of a user's account.
+For convenience, a contract address can be associated with a name in the context of a user's account.
 
 Typically this is done in the same contract that calls `store_function`.
-In the example below 
-`counter_ext` is a function in the same module as the executing contract.
-The function is stored on blockchain with `store_function`.
-Next, a call to `add_uref` associates the stored contract's address with a name `"counter"`.
+In the example below `counter_ext` is a function in the same module as the executing contract.
+The function is stored on blockchain with `store_function`. Next, a call to `add_uref` associates the stored contract's address with a name `"counter"`.
 
 ```
     //create map of references for stored contract
@@ -254,7 +255,9 @@ by calling Contract API function `get_arg` with index of an argument. First argu
 
 **Time to Live and Deploy Dependency**
 
-**Time to Live** specifies a duration by which the deploy can be included in a block prior to expiration. The node will not accept deploys with deploy.timestamp greater than some configurable number of milliseconds in the future (relative to its current time).  This maximum future time is configurable because this parameter is not visible at the protocol level since deploys can only go into blocks after their deploy.timestamp. This value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block. 
+**Time to Live** specifies a duration for which the deploy can be included in a block prior to expiration. The node will not accept deploys with deploy.timestamp greater than some configurable number of milliseconds in the future (relative to its current time). This maximum future time is configurable -- this parameter is not at the protocol level since deploys can only go into blocks after their deploy.timestamp.
+
+This value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block.
 
 `--ttl-millis` passes the argument set Time to live, Time (in milliseconds) that the deploy will remain valid for. If no parameter is specified, a default (defined in the Chainspec - Genesis block) will be used.
 
@@ -272,23 +275,19 @@ as a serialized sequence of
 For example: `--session-args '[{"name": "amount", "value": {"long_value": 123456}}]'`.
 
 
-Note, contract arguments are positional,
-and so the `"name"` attribute is currently not used. However, we plan to change contract arguments to be keyword (named) arguments.
-The structure of the `Arg` protobuf message and its JSON serialized form is ready for this change.
-
-In a future release Contract API `get_arg` function
-will change to accept a string with a name of an argument instead of it's index.
-
 **Accessing arguments in contracts**
 
-Contract API function `get_arg` allows to access contract arguments,
-for example: 
+Contract API function `get_arg` allows to access contract arguments. accessing contract arguments via their indices `(get_args(0))`. Currently `get_arg` accepts name of a parameter as a string.
 
+For example:
+```
+get_arg("amount")
+```
 ```
 let amount: u64 = get_arg(0);
 ```
+will deserialize contract argument `amount` as a value of type `u64`.
 
-will deserialize first contract argument as a value of type `u64`.
 Note, types of the arguments specified when deploying and the types in the Rust code must match.
 
 The matching type for protobuf 
@@ -297,12 +296,12 @@ type `long_value`
 is currently `u64`.
 
 The same can be achieved by declaring return type of `get_arg` explicitly,
+
 for example:
 
 ```
 let amount = get_arg::<u64>(0);
 ```
-
 
 **Supported types of contract arguments**
 
