@@ -1,35 +1,24 @@
 # DEVNET
-
-
-
-## Quick Start Instructions
-
-
+##  Quick Start Instructions
 
 ##### Step 1: Creating an account
+Go to [clarity.casperlabs.io Sign-In](https://clarity.casperlabs.io/#/) and complete the new user process:
+* Navigate to [Accounts](https://clarity.casperlabs.io/#/accounts) and click [Create Account](https://clarity.casperlabs.io/#/accounts)
+* Provide a name for your account and click [Save](https://clarity.casperlabs.io/#/accounts); multiple key files will be written to disk. You will need these key files to interact with the network, so give some consideration to where you save them.
+* Navigate to [Faucet](https://clarity.casperlabs.io/#/faucet), select your new account, and click [Request Tokens](https://clarity.casperlabs.io/#/faucet)
 
-Go to [clarity.casperlabs.io Sign-In](https://clarity.casperlabs.io/) and complete the new user process:
+  The request will appear in the "Recent Faucet Requests" table; wait for the green check mark to appear in the "Status" column.
 
+  Note that a "token" obtained on devnet has no monetary value whatsoever.
 
-* Navigate to [Accounts](https://clarity.casperlabs.io/#/accounts) and click [Create Account]
+##### Step 2: Checking the balance of an account
 
-  Provide a name for your account and click [Save]; multiple key files will be written to disk. You will need these key files to interact with the network, so give some consideration to where you save them.
+ [Install the CasperLabs client](INSTALL.md), use the `balance` sub-command (see example below);
 
-- Navigate to [Faucet](https://clarity.casperlabs.io/#/faucet), select your new account, and click [Request Tokens]
+* `--address` is the hex-encoded public key of the account to query
+* `--block-hash` the hex-encoded hash of the block where the balance should be queried.
 
-  The request will appear in the "Recent Faucet Requests" table; wait for the green check mark to appear in the "Status" column 
-
-Note, a "token" obtained on devnet has no monetary value whatsoever.
-
-##### Step 2:  Checking the balance of an account
-
-* [Install the CasperLabs client](INSTALL.md)
-
-  - Use the `balance` sub-command (see example below)
-
-    `--address` is the hex-encoded public key of the account to query
-    `--block-hash` the hex-encoded hash of the block where the balance should be queried
-
+For example:
 ```
 casperlabs-client \
         --host deploy.casperlabs.io \
@@ -37,17 +26,18 @@ casperlabs-client \
         --address b9ae114d6093646ed4be6f7fe1f7e5533a5d52a3351f3f18030ea82b3d915d6b \
         --block-hash ef6d4c66a29d833de462fbb7fd35227cbc3849b36872940c852727f668d6993f
 ```
+See [INSTALL.md](INSTALL.md) for details.
 
 ##### Step 3: Deploying code
 
-Once the CasperLabs client is installed: 
+Once the CasperLabs client is installed, compile a contract written in rust.
 
-* [Compile a contract written in rust](CONTRACTS.md)
-  * Use the CasperLabs client `deploy` sub-command (example below)
+Use the CasperLabs client `deploy` sub-command (see example below):
 
-    `--session` is the path to the compiled contract
+  - `--session` is the path to the compiled contract
+  - `--private-key` is the path to the private key file downloaded from [clarity.casperlabs.io](https://clarity.casperlabs.io/) during account creation.
 
-    `--private-key` is the path to the private key file downloaded from [clarity.casperlabs.io](https://clarity.casperlabs.io/) during account creation
+For example:
 ```
 casperlabs-client \
         --host deploy.casperlabs.io \
@@ -56,55 +46,13 @@ casperlabs-client \
         --private-key account.private.key
 ```
 
-* You can also monitor the outcome of deploys using the casperlabs-client:
-```
-casperlabs-client\ 
-        --host deploy.casperlabs.io \ 
-        --port 40401 show-deploy <deploy-hash>
-```
-
-* To add Parameters for Time to Live and Deploy Dependencies:
-
-* The `time_to_live` parameter is included in the deploy to set a time frame limiting how long a deploy is effective before it is no longer valid.
-
-  * Use the CasperLabs client `deploy` sub-command (example below)
-
-    `--ttl-millis` is to add the argument set Time to live, Time (in milliseconds) that the deploy will remain valid for.
-
-```
-casperlabs-client\
-    --host deploy.casperlabs.io \
-        deploy \
-    --ttl-millis  <arg>
-```
-
-Note,  if no parameter is specified, a default (defined in the Chainspec - Genesis block) will be used.
-
-* The `dependencies` parameter provides for listing the deploy hashes that must be executed before the present one, explicitly enforcing an ordering to deploys.
-
-  * Use the CasperLabs client `deploy` sub-command (example below)
-
-    `--dependencies` list deploy hashes (base16 encoded) which must be executed before this deploy.
-
-```
-casperlabs-client\
-    --host deploy.casperlabs.io \
-        deploy \
-    --dependencies  <arg>...
-```
 
 
-See `casperlabs-client deploy --help`
+##### Step 4: Bonding
 
+Follow instructions in [NODE.md](NODE.md) for connecting to the CasperLabs network. Once bonded, you can use the CasperLabs client with your local node to deploy code and propose blocks on the devnet.
 
-
-##### Step 5: Bonding
-
-Follow instructions in [NODE.md](NODE.md) for connecting to the CasperLabs network.
-
-Once bonded, you can use the CasperLabs client with your local node to deploy code and propose blocks on the devnet.
-
-See [CONTRACTS.md](CONTRACTS.md) for details.
+For example:
 
 ```
 casperlabs-client \
@@ -118,14 +66,27 @@ casperlabs-client \
         propose
 ```
 
+You can query the outcome of deploys using `casperlabs-client`.
+
+For example:
+
+```
+casperlabs-client\
+    --host deploy.casperlabs.io \
+    --port 40401 show-deploy 
+```
+
+Add parameters for Time to Live and Deploy Dependencies.
+
+See [CONTRACTS.md](CONTRACTS.md) for details.
+
+See parameters in `casperlabs-client deploy --help`
 
 
-##### Step 6: Unbonding
+
+##### Step 5: Unbonding
 
 Follow instructions in [NODE.md](NODE.md) for stopping a bonded validator.
 
-
-
 ## Notes
 This quick start gives the simplest set of instructions for getting started on the CasperLabs devnet. More advanced users may wish to take other approaches to some of the steps listed above.
-
