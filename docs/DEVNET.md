@@ -72,8 +72,8 @@ For example:
 
 ```
 casperlabs-client\
-    --host deploy.casperlabs.io \
-    --port 40401 show-deploy 
+    	--host deploy.casperlabs.io \
+    	--port 40401 show-deploy 
 ```
 
 Add parameters for Time to Live and Deploy Dependencies.
