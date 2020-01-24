@@ -149,6 +149,7 @@ class MultiParentCasperImpl[F[_]: Concurrent: Log: Metrics: Time: BlockStorage: 
   ): F[BlockStatus] = Metrics[F].timer("addBlock") {
     for {
       lastFinalizedBlockHash <- lfbRef.get
+      message                <- MonadThrowable[F].fromTry(Message.fromBlock(block))
       status <- validateAndAddBlock(
                  StatelessExecutor.Context(genesis, lastFinalizedBlockHash).some,
                  block
@@ -157,16 +158,16 @@ class MultiParentCasperImpl[F[_]: Concurrent: Log: Metrics: Time: BlockStorage: 
       hashPrefix = PrettyPrinter.buildString(block.blockHash)
       // Update the last finalized block; remove finalized deploys from the buffer
       _ <- Log[F].debug(s"Updating last finalized block after adding ${hashPrefix -> "block"}")
-      _ <- updateLastFinalizedBlock(block, dag).whenA(status == Valid)
+      _ <- updateLastFinalizedBlock(message, dag).whenA(status == Valid)
       _ <- Log[F].debug(s"Finished adding ${hashPrefix -> "block"}")
     } yield status
   }
 
   /** Update the finalized block; return true if it changed. */
-  private def updateLastFinalizedBlock(block: Block, dag: DagRepresentation[F]): F[Unit] =
+  private def updateLastFinalizedBlock(message: Message, dag: DagRepresentation[F]): F[Unit] =
     Metrics[F].timer("updateLastFinalizedBlock") {
       for {
-        result <- MultiParentFinalizer[F].onNewBlockAdded(block)
+        result <- MultiParentFinalizer[F].onNewMessageAdded(message)
         _ <- result.traverse {
               case fb @ FinalizedBlocks(mainParent, _, secondary) => {
                 val mainParentFinalizedStr = PrettyPrinter.buildString(
@@ -610,9 +611,10 @@ object MultiParentCasperImpl {
                   block,
                   casperState.invalidBlockTracker
                 )
-          _ <- Log[F].debug(s"Checking equivocation for ${hashPrefix -> "block"}")
+          _       <- Log[F].debug(s"Checking equivocation for ${hashPrefix -> "block"}")
+          message <- MonadThrowable[F].fromTry(Message.fromBlock(block))
           _ <- EquivocationDetector
-                .checkEquivocationWithUpdate[F](dag, block)
+                .checkEquivocationWithUpdate[F](dag, message)
                 .timer("checkEquivocationsWithUpdate")
           _ <- Log[F].debug(s"Block effects calculated for ${hashPrefix -> "block"}")
         } yield blockEffects).attempt

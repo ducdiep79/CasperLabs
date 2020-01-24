@@ -31,8 +31,10 @@ TEST_CONTRACTS      := $(patsubst %, build-contract-rs/%, $(TEST_CONTRACTS))
 
 # AssemblyScript Contracts
 CLIENT_CONTRACTS_AS = $(shell find ./contracts-as/client   -mindepth 1 -maxdepth 1 -type d)
+TEST_CONTRACTS_AS   = $(shell find ./contracts-as/test   -mindepth 1 -maxdepth 1 -type d)
 
 CLIENT_CONTRACTS_AS := $(patsubst %, build-contract-as/%, $(CLIENT_CONTRACTS_AS))
+TEST_CONTRACTS_AS   := $(patsubst %, build-contract-as/%, $(TEST_CONTRACTS_AS))
 
 INTEGRATION_CONTRACTS += \
 	bonding-call \
@@ -66,20 +68,20 @@ build:
 
 build-contract-rs/%:
 	$(CARGO) build \
-		--release $(filter-out --release, $(CARGO_FLAGS)) \
-		--package $* \
-		--target wasm32-unknown-unknown
+	        --release $(filter-out --release, $(CARGO_FLAGS)) \
+	        --package $* \
+	        --target wasm32-unknown-unknown
 
 build-contract-as/%:
 	cd $* && $(NPM) run asbuild
 
 build-integration-contract/%:
 	$(CARGO) build \
-		-Z unstable-options \
-		--release $(filter-out --release, $(CARGO_FLAGS)) \
-		--package $* \
-		--target wasm32-unknown-unknown \
-		--out-dir $(IT_RES_DIR)
+	        -Z unstable-options \
+	        --release $(filter-out --release, $(CARGO_FLAGS)) \
+	        --package $* \
+	        --target wasm32-unknown-unknown \
+	        --out-dir $(IT_RES_DIR)
 
 .PHONY: build-contracts-rs
 build-contracts-rs: \
@@ -95,7 +97,8 @@ build-contracts-rs: \
 
 .PHONY: build-contracts-as
 build-contracts-as: \
-	$(CLIENT_CONTRACTS_AS)
+	$(CLIENT_CONTRACTS_AS) \
+	$(TEST_CONTRACTS_AS)
 
 .PHONY: build-contracts
 build-contracts: build-contracts-rs build-contracts-as
@@ -124,7 +127,7 @@ test-contracts-rs: build-contracts-rs
 .PHONY: test-contracts-as
 test-contracts-as: build-contracts-rs build-contracts-as
 	@# see https://github.com/rust-lang/cargo/issues/5015#issuecomment-515544290
-	$(CARGO) test $(CARGO_FLAGS) --manifest-path "engine-tests/Cargo.toml" --features "use_as_wasm" -- --ignored --nocapture
+	$(CARGO) test $(CARGO_FLAGS) --manifest-path "engine-tests/Cargo.toml" --features "use-as-wasm" -- --ignored --nocapture
 
 .PHONY: test-contracts
 test-contracts: test-contracts-rs test-contracts-as
@@ -174,15 +177,23 @@ package-system-contracts: target/system-contracts.tar.gz
 
 .PHONY: package
 package:
-	cd contract-ffi && $(CARGO) package
+	cd contract && $(CARGO) package
 
 .PHONY: publish
 publish:
-	cd contract-ffi && $(CARGO) publish
+	./publish.sh
 
 .PHONY: check-publish
 check-publish:
-	cd contract-ffi && $(CARGO) publish --dry-run
+	cd cargo-casperlabs && $(CARGO) publish --dry-run
+#	cd contract && $(CARGO) publish --dry-run
+#	cd engine-core && $(CARGO) publish --dry-run
+#	cd engine-grpc-server && $(CARGO) publish --dry-run
+#	cd engine-shared && $(CARGO) publish --dry-run
+#	cd engine-storage && $(CARGO) publish --dry-run
+#	cd engine-test-support && $(CARGO) publish --dry-run
+#	cd engine-wasm-prep && $(CARGO) publish --dry-run
+	cd types && $(CARGO) publish --dry-run
 
 .PHONY: bench
 bench: build-contracts-rs

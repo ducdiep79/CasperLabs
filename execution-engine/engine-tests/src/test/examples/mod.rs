@@ -1,2 +1,2 @@
-#[cfg(test)]
-pub mod erc20;
+mod erc20;
+mod keys_manager;
