@@ -248,7 +248,7 @@ Note: names are valid only in the context of the account which called `put_key`.
 In the example below, `COUNTER_EXT` is a function in the same module as the executing contract. The function is stored on blockchain with `store_function_at_hash`. Next, a call to `put_key` associates the stored contract's address with a `COUNTER_KEY`.
 
 ```
-//create map of references for stored contract
+    //create map of references for stored contract
     let mut counter_urefs: BTreeMap<String, Key> = BTreeMap::new();
     let key_name = String::from(COUNT_KEY);
     counter_urefs.insert(key_name, counter_local_key.into());
