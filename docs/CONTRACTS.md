@@ -21,7 +21,7 @@ Or you can run the client commands from the root directory of the repo, using ex
 
 ## Instructions
 
-##### Step 1: Clone the [main repo](https://github.com/CasperLabs/CasperLabs/) to obtain the [example contracts](https://github.com/CasperLabs/CasperLabs/tree/dev/execution-engine/contracts/examples) and set up your toolchain
+##### Step 1: Clone the [main repo](https://github.com/CasperLabs/CasperLabs/tree/master) to obtain the [example contracts](https://github.com/CasperLabs/CasperLabs/tree/dev/execution-engine/contracts/examples) and set up your toolchain
 ```
 git clone git@github.com:CasperLabs/CasperLabs.git
 cd CasperLabs/execution-engine
@@ -29,7 +29,7 @@ rustup toolchain install $(cat rust-toolchain)
 rustup target add --toolchain $(cat rust-toolchain) wasm32-unknown-unknown
 ```
 
-Source code of contract examples is currently located in the `./execution-engine/contracts/examples` directory inside the main repo.
+Source code of contract examples is currently located in the `./execution-engine/contracts/examples` directory inside the [main repo](https://github.com/CasperLabs/CasperLabs/tree/master/).
 
 ##### Step 2: Build the example contracts
 ```
@@ -141,7 +141,7 @@ casperlabs-client \
     --host localhost \
     print-deploy
 ```
-This will print information of a deploy into STDOUT. There are `--json` and `--bytes-standard` flags for, respectively, using standard JSON vs Protobuf text encoding and standard ASCII-escaped for Protobuf or Base64 for JSON bytes encoding vs custom Base16. The same set of flags also available for all `show-*` and `query-state` commands.
+This will print information of a deploy into STDOUT. There are `--json` and `--bytes-standard` flags for, respectively, using standard JSON vs Protobuf text encoding and standard ASCII-escaped for Protobuf or Base64 for JSON bytes encoding vs custom Base16. The same set of flags is also available for all `show-*` and `query-state` commands.
 
 **Sending deploy to the node**
 ```
@@ -154,7 +154,7 @@ In the example above there is no `-i` argument, meaning that the signed deploy w
 Reading from STDIN and writing to STDOUT allows for piping output from one command to the input of another one (commands are incomplete for better readability):
 ```
 casperlabs-client make-deploy [arguments] | \
-casperlabs-client sign-deploy --private-key [private_key] --public-key [public_key] | \
+casperlabs-client sign-deploy --private-key [private_key] --public-key [public_key] |\
 casperlabs-client send-deploy
 ```
 
@@ -213,7 +213,7 @@ For example:
 
 `--session-hash 2358448f76c8b3a9e263571007998791a815e954c3c3db2da830a294ea7cba65`.
 
-`payment-hash` is an option equivalent to `--session-hash`
+`--payment-hash` is an option equivalent to `--session-hash`
 but for specifying the address of a payment contract.
 
 **Calling a stored contract by name**
@@ -227,11 +227,11 @@ For example:
     //create map of references for stored contract
     let mut counter_urefs: BTreeMap<String, Key> = BTreeMap::new();
     let pointer = store_function("counter_ext", counter_urefs);
-    add_uref("counter", &pointer.into());
+    put_key("counter", &pointer.into());
 ```
 
-`casperlabs-client` `deploy` command accepts argument `--session-name`
-which can be used to refer to a stored contract by its name.
+
+`casperlabs-client` `deploy` command accepts argument `--session-name` which can be used to refer to a stored contract by its name.
 
 For example:
 ```
@@ -240,7 +240,22 @@ For example:
 This option can be used to create a deploy with a stored contract
 acting as the deploy's session contract. An equivalent argument for a payment contract is `--payment-name`.
 
-Note: names are valid only in the context of the account which called `add_uref`.
+Note: names are valid only in the context of the account which called `put_key`.
+
+
+**Calling a stored contract by reference**
+
+In the example below, `COUNTER_EXT` is a function in the same module as the executing contract. The function is stored on blockchain with `store_function_at_hash`. Next, a call to `put_key` associates the stored contract's address with a `COUNTER_KEY`.
+
+```
+//create map of references for stored contract
+    let mut counter_urefs: BTreeMap<String, Key> = BTreeMap::new();
+    let key_name = String::from(COUNT_KEY);
+    counter_urefs.insert(key_name, counter_local_key.into());
+    let pointer = storage::store_function_at_hash(COUNTER_EXT, counter_urefs);
+    put_key(COUNTER_KEY, pointer.into());
+
+```
 
 **Understanding the difference between calling a contract directly and with `call_contract`**
 
@@ -251,21 +266,20 @@ for example its address is passed to `--session-hash` argument of the `deploy` c
 
 Note that for now, one way to get around this (as this will likely change in the future), is to create a stateless "proxy" contract which essentially does `call_contract` and nothing else.
 
-For example, this stored contract: Increment the counter
+For example in [this](https://github.com/CasperLabs/CasperLabs/tree/dev/execution-engine/contracts/examples/counter-define#deploy) contract: Increment the counter
 ```
 $ casperlabs-client --host $HOST deploy \
     --private-key $PRIVATE_KEY_PATH \
     --payment-amount 10000000 \
     --session-name counter_inc
 ```
-The counter contract example, stores an additional function for incrementing the counter. This function can be called directly by name in order to increment the counter without sending additional wasm. This is useful because it means we can greatly reduce the amount of wasm we send in the current LRT workflow.
+The counter contract example, stores an additional function for incrementing the counter. This function can be called directly by name in order to increment the counter without sending additional wasm.
 
 **Passing arguments to contracts**
 
 Smart contracts can be parametrized. A list of contract arguments can be specified on command line when the contract is deployed.
 
-When the contract code is executed it can access individual arguments
-by calling Contract API function `get_arg` with index of an argument. First argument is indexed with `0`.
+When the contract code is executed it can access individual arguments by calling Contract API function `get_arg` with index of an argument. First argument is indexed with `0`.
 
 **Time to Live and Deploy Dependency**
 
