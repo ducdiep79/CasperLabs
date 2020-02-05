@@ -191,11 +191,53 @@ You can also retrieve further information from our platform (with our APIs, et. 
 
 ###### Advanced deploy options
 
+Payment and session contracts stored on the chain can be called by providing one of the following:
+
+- `hash`, or
+- `uref`, or
+- `name` of the contract
+
 **Stored contracts**
 
 A function that is part of the deployed contract's module can be saved on the blockchain with the Contract API function `store_function`.
 
 Such function becomes a stored contract that can be later called from another contract with `call_contract`, or used instead of a WASM file when creating a new deploy on the command line.
+
+There are two ways to store a contract under a Key: both correspond to
+`--session-name` or `--payment-name`
+
+- `store_function` stores a contract under a `Key::URef`
+- `store_function_at_hash` stores a contract under a `Key::Hash`
+
+To associate a Key with a human-readable name: use `put_key`. This association is only valid in the context where `put_key` is run.
+
+The following are ways to execute code from the client ~~(e.g., scala or python)~~:
+
+- Provide the wasm directly, this corresponds to `--session` or `--payment` depending on what execution phase you want the code to be used for.
+
+  For example:
+
+  `fpo`
+
+- Provide the `Key::Hash address` in `base-16` that a contract was previously stored under, the `store_function_at_hash`, this corresponds to `--session-hash` or `--payment-hash`.
+
+​       For example:
+
+`    fpo                 `
+
+- Provide the human readable name that is associated with some Key  `put_key`  a contract was previously stored under via either `store_* function` (i.e. `store_function`, `store_function_at_hash`)`,  this corresponds to`--session-name` or  `--payment-name`.
+
+For example:
+
+`    fpo   `
+
+- Provide the bytes identifying the `Key::URef` that a contract was previously stored under (this corresponds to `--session-uref` or `--payment-uref`)
+
+For example:
+
+`    fpo   `
+
+Note that if you don't use the human readable name, you will get a forged `URef error`. You must have first called the `put_key` to persist the `URef` in the account, in which case you would have used the key initially.
 
 **Contract address**
 
@@ -218,7 +260,7 @@ but for specifying the address of a payment contract.
 
 **Calling a stored contract by name**
 
-For convenience, a contract address can be associated with a name in the context of a user's account. Typically this is done in the same contract that calls `store_function`.
+A contract address can be associated with a name in the context of a user's account. Typically this is done in the same contract that calls `store_function`.
 
 In the example below, `counter_ext` is a function in the same module as the executing contract. The function is stored on blockchain with `store_function`. Next, a call to `put_key` associates the stored contract's address with a name `"counter"`.
 
@@ -242,7 +284,6 @@ acting as the deploy's session contract. An equivalent argument for a payment co
 
 Note: names are valid only in the context of the account which called `put_key`.
 
-
 **Calling a stored contract by reference**
 
 In the example below, `COUNTER_EXT` is a function in the same module as the executing contract. The function is stored on blockchain with `store_function_at_hash`. Next, a call to `put_key` associates the stored contract's address with a `COUNTER_KEY`.
@@ -261,6 +302,7 @@ In the example below, `COUNTER_EXT` is a function in the same module as the exec
 
 When a contract is stored with `store_function`  there is a new context created for it, with initial content defined by the map passed to `store_function` as its second argument. Later, when the stored contract is called with `call_contract` it is executed in this context.
 
+**Calling a contract directly**
 In contrast, when the same stored contract is called directly,
 for example its address is passed to `--session-hash` argument of the `deploy` command, the contract will be executed in the context of the account that creates the deploy. The consequence of this is that stateful contracts designed to operate in a specific context may not work as expected when called directly. They may, for instance, attempt to read or modify a `URef` that they expect to exist in their context, but find it missing in the context that they are actually run in -- that is of the deployer's account.
 
@@ -382,6 +424,6 @@ casperlabs-client \
 
 You will also need to explicitly propose after making a deploy (or several deploys), in order for your deploys to be committed:
 
-```
+```markdown
 casperlabs-client --host 127.0.0.1 propose
 ```

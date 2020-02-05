@@ -30,11 +30,13 @@ SYSTEM_CONTRACTS    := $(patsubst %, build-contract-rs/%, $(SYSTEM_CONTRACTS))
 TEST_CONTRACTS      := $(patsubst %, build-contract-rs/%, $(TEST_CONTRACTS))
 
 # AssemblyScript Contracts
-CLIENT_CONTRACTS_AS = $(shell find ./contracts-as/client   -mindepth 1 -maxdepth 1 -type d)
-TEST_CONTRACTS_AS   = $(shell find ./contracts-as/test   -mindepth 1 -maxdepth 1 -type d)
+CLIENT_CONTRACTS_AS  = $(shell find ./contracts-as/client   -mindepth 1 -maxdepth 1 -type d)
+TEST_CONTRACTS_AS    = $(shell find ./contracts-as/test     -mindepth 1 -maxdepth 1 -type d)
+EXAMPLE_CONTRACTS_AS = $(shell find ./contracts-as/examples -mindepth 1 -maxdepth 1 -type d)
 
-CLIENT_CONTRACTS_AS := $(patsubst %, build-contract-as/%, $(CLIENT_CONTRACTS_AS))
-TEST_CONTRACTS_AS   := $(patsubst %, build-contract-as/%, $(TEST_CONTRACTS_AS))
+CLIENT_CONTRACTS_AS  := $(patsubst %, build-contract-as/%, $(CLIENT_CONTRACTS_AS))
+TEST_CONTRACTS_AS    := $(patsubst %, build-contract-as/%, $(TEST_CONTRACTS_AS))
+EXAMPLE_CONTRACTS_AS := $(patsubst %, build-contract-as/%, $(EXAMPLE_CONTRACTS_AS))
 
 INTEGRATION_CONTRACTS += \
 	bonding-call \
@@ -58,6 +60,8 @@ INTEGRATION_CONTRACTS := $(patsubst %, build-integration-contract/%, $(INTEGRATI
 CONTRACT_TARGET_DIR       = target/wasm32-unknown-unknown/release
 CONTRACT_TARGET_DIR_AS    = target-as
 PACKAGED_SYSTEM_CONTRACTS = mint_install.wasm pos_install.wasm
+TOOL_TARGET_DIR           = cargo-casperlabs/target
+TOOL_WASM_DIR             = cargo-casperlabs/wasm
 
 .PHONY: all
 all: build build-contracts
@@ -98,7 +102,8 @@ build-contracts-rs: \
 .PHONY: build-contracts-as
 build-contracts-as: \
 	$(CLIENT_CONTRACTS_AS) \
-	$(TEST_CONTRACTS_AS)
+	$(TEST_CONTRACTS_AS) \
+	$(EXAMPLE_CONTRACTS_AS)
 
 .PHONY: build-contracts
 build-contracts: build-contracts-rs build-contracts-as
@@ -115,7 +120,7 @@ test-rs:
 
 .PHONY: test-as
 test-as: setup-as
-	cd contract-ffi-as && npm run asbuild && npm run test
+	cd contract-as && npm run asbuild && npm run test
 
 .PHONY: test
 test: test-rs test-as
@@ -156,6 +161,8 @@ check: \
 clean:
 	rm -f comm/.rpm
 	rm -rf $(CONTRACT_TARGET_DIR_AS)
+	rm -rf $(TOOL_TARGET_DIR)
+	rm -rf $(TOOL_WASM_DIR)
 	$(CARGO) clean
 
 .PHONY: deb
@@ -185,7 +192,7 @@ publish:
 
 .PHONY: check-publish
 check-publish:
-	cd cargo-casperlabs && $(CARGO) publish --dry-run
+	cd cargo-casperlabs && $(CARGO) publish --dry-run --allow-dirty
 #	cd contract && $(CARGO) publish --dry-run
 #	cd engine-core && $(CARGO) publish --dry-run
 #	cd engine-grpc-server && $(CARGO) publish --dry-run
@@ -209,11 +216,10 @@ setup-rs: rust-toolchain
 	$(RUSTUP) update
 	$(RUSTUP) toolchain install $(RUST_TOOLCHAIN)
 	$(RUSTUP) target add --toolchain $(RUST_TOOLCHAIN) wasm32-unknown-unknown
-	$(RUSTUP) component add --toolchain $(RUST_TOOLCHAIN) rustfmt clippy
 
 .PHONY: setup-as
-setup-as: contract-ffi-as/package.json
-	cd contract-ffi-as && $(NPM) install
+setup-as: contract-as/package.json
+	cd contract-as && $(NPM) install
 
 .PHONY: setup
 setup: setup-rs setup-as
