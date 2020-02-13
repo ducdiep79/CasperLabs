@@ -1,4 +1,4 @@
-import {toBytesU64} from "./bytesrepr";
+import {Error, Result, Ref} from "./bytesrepr";
 import {Pair} from "./pair";
 
 const HEX_LOWERCASE: string[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
@@ -27,6 +27,16 @@ export class U512 {
 
     constructor() {
         this.pn = new Uint32Array(16); // 512 bits total
+    }
+
+    static get MAX_VALUE(): U512 {
+        let value = new U512();
+        value.pn.fill(0xffffffff);
+        return value;
+    }
+
+    static get MIN_VALUE(): U512 {
+        return new U512();
     }
 
     static fromHex(hex: String): U512 {
@@ -382,9 +392,9 @@ export class U512 {
         return this.toHex();
     }
 
-    static fromBytes(bytes: Uint8Array): U512 | null {
+    static fromBytes(bytes: Uint8Array): Result<U512> {
         if (bytes.length < 1) {
-            return null;
+            return new Result<U512>(null, Error.EarlyEndOfStream, 0);
         }
 
         const lengthPrefix = <i32>bytes[0];
@@ -397,7 +407,8 @@ export class U512 {
         }
 
         res.setBytesLE(buffer);
-        return res;
+        let ref = new Ref<U512>(res);
+        return new Result<U512>(ref, Error.Ok, 1 + lengthPrefix);
     }
 
     toBytes(): Array<u8> {

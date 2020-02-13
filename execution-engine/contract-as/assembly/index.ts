@@ -4,15 +4,11 @@ import {Error, ErrorCode} from "./error";
 import {CLValue} from "./clvalue";
 import {Key} from "./key";
 import {toBytesString,
-        toBytesArrayU8,
-        toBytesU32,
         toBytesVecT,
-        fromBytesArrayU8,
         fromBytesMap,
         fromBytesString} from "./bytesrepr";
 import {U512} from "./bignum";
 import {UREF_SERIALIZED_LENGTH, KEY_UREF_SERIALIZED_LENGTH} from "./constants";
-import { typedToArray } from "./utils";
 import {Pair} from "./pair";
 
 // NOTE: interfaces aren't supported in AS yet: https://github.com/AssemblyScript/assemblyscript/issues/146#issuecomment-399130960
@@ -72,7 +68,11 @@ export function getSystemContract(system_contract: SystemContract): URef | null 
     // TODO: revert
     return null;
   }
-  return URef.fromBytes(data);
+  let decodeResult = URef.fromBytes(data);
+  if (decodeResult.hasError()) {
+    return null;
+  }
+  return decodeResult.value;
 }
 
 export function storeFunction(name: String, namedKeysBytes: u8[]): Key {
@@ -121,7 +121,11 @@ export function callContract(key: Key, args: CLValue[]): Uint8Array | null {
   }
 
   let hostBufSize = resultSize[0];
-  return readHostBuffer(hostBufSize);
+  if (hostBufSize > 0) {
+    return readHostBuffer(hostBufSize);
+  } else {
+    return new Uint8Array(0);
+  }
 }
 
 export function putKey(name: String, key: Key): void {
@@ -137,7 +141,7 @@ export function putKey(name: String, key: Key): void {
 
 export function getKey(name: String): Key | null {
   var nameBytes = toBytesString(name);
-  let keyBytes = new Uint8Array(KEY_UREF_SERIALIZED_LENGTH); // TODO: some equivalent of Key::serialized_size_hint() ?
+  let keyBytes = new Uint8Array(KEY_UREF_SERIALIZED_LENGTH);
   let resultSize = new Uint32Array(1);
   let ret =  externals.get_key(
       nameBytes.dataStart,
@@ -152,31 +156,7 @@ export function getKey(name: String): Key | null {
     return null;
   }
   let key = Key.fromBytes(keyBytes.slice(0, <i32>resultSize[0])); // total guess
-  return key;
-}
-
-export enum TransferredTo {
-  ExistingAccount = 0,
-  NewAccount = 1,
-}
-
-export function transferToAccount(target: Uint8Array, amount: U512): U32 | null {
-  // var targetBytes = (target);
-  let amountBytes = amount.toBytes();
-
-  let ret = externals.transfer_to_account(
-      target.dataStart,
-      target.length,
-      amountBytes.dataStart,
-      amountBytes.length,
-  );
-
-  if (ret <= 1) {
-    return changetype<U32>(ret);
-  }
-  else {
-    return null;
-  }
+  return key.ok();
 }
 
 export function ret(value: CLValue): void {
@@ -250,9 +230,26 @@ export function listNamedKeys(): Array<Pair<String, Key>> {
     fromBytesString,
     Key.fromBytes);
 
-  if (maybeMap === null) {
+  if (maybeMap.hasError()) {
     Error.fromErrorCode(ErrorCode.Deserialize).revert();
     return <Array<Pair<String, Key>>>unreachable();
   }
-  return <Array<Pair<String, Key>>>maybeMap;
+  return maybeMap.value;
+}
+
+export function upgradeContractAtURef(name: String, uref: URef): void {
+  const nameBytes = toBytesString(name);
+  const key = Key.fromURef(uref);
+  const keyBytes = key.toBytes();
+  let ret = externals.upgrade_contract_at_uref(
+      nameBytes.dataStart,
+      nameBytes.length,
+      keyBytes.dataStart,
+      keyBytes.length
+  );
+  if (ret < 1)
+    return;
+  const error = Error.fromResult(ret);
+  if(error !== null)
+    error.revert();
 }
