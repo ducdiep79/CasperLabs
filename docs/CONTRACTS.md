@@ -1,6 +1,5 @@
 # Deploying Contracts
 
-
 ## Prerequisites
 
 #### Using binaries (recommended):
@@ -11,9 +10,7 @@
 * Install [`rustup`](https://rustup.rs/).
 * Build the [`casperlabs-client`](BUILD.md#build-the-client).
 
-If you build from source, you will need to add the build directories to your `PATH`.
-
-For example:
+If you build from source, you will need to add the build directories to your `PATH`, for example:
 ```
 export PATH="<path-to-CasperLabs-repo>/client/target/universal/stage/bin:$PATH"
 ```
@@ -21,7 +18,7 @@ Or you can run the client commands from the root directory of the repo, using ex
 
 ## Instructions
 
-##### Step 1: Clone the [main repo](https://github.com/CasperLabs/CasperLabs/tree/master) to obtain the [example contracts](https://github.com/CasperLabs/CasperLabs/tree/dev/execution-engine/contracts/examples) and set up your toolchain
+##### Step 1: Clone the [main repo](https://github.com/CasperLabs/CasperLabs/) to obtain the [example contracts](https://github.com/CasperLabs/CasperLabs/tree/dev/execution-engine/contracts/examples) and set up your toolchain
 ```
 git clone git@github.com:CasperLabs/CasperLabs.git
 cd CasperLabs/execution-engine
@@ -29,46 +26,49 @@ rustup toolchain install $(cat rust-toolchain)
 rustup target add --toolchain $(cat rust-toolchain) wasm32-unknown-unknown
 ```
 
-Source code of contract examples is currently located in the `./execution-engine/contracts/examples` directory inside the [main repo](https://github.com/CasperLabs/CasperLabs/tree/master/).
+Source code of contract examples are currently located in `./execution-engine/contracts/examples` directory inside the main repo.
 
 ##### Step 2: Build the example contracts
 ```
 make build-example-contracts
 export COUNTER_DEFINE="$(pwd)/target/wasm32-unknown-unknown/release/counter_define.wasm"
-export COUNTER_CALL="$(pwd)/target/wasm32-unknown-unknown/release/counter_call.wasm"
 ```
 
 ##### Step 3: Create an account at [clarity.casperlabs.io](https://clarity.casperlabs.io)
 
 Create an account, which automatically creates a new keypair.  This keypair should be downloaded to the machine where you will deploy contracts.
 
-##### Step 4: Add coins to the account
+##### Step 4: Add coins to this account
 
-You can add coins to the account using the [faucet](https://clarity.casperlabs.io/#/faucet).
+Add coins to this account using the [faucet](https://clarity.casperlabs.io/#/faucet).
 
 ##### Step 5: Deploy `counterdefine.wasm`
 
-Note: `--payment-amount` is used to define the maximum number of motes to spend on the execution of the deploy.
 ```
 casperlabs-client \
     --host deploy.casperlabs.io \
     deploy \
     --private-key <path-to-private-key> \
-    --session $COUNTER_DEFINE
-    --payment-amount <int>
+    --session $COUNTER_DEFINE \
+    --payment-amount 2000000
 ```
 
+Note: `--payment-amount` is used to define the maximum number of motes to spend on the execution of the deploy. In the example, 2,000,000 is the amount needed to execute the counter define contract. The source code for the contract used in this example can be found [here](https://github.com/CasperLabs/CasperLabs/blob/master/execution-engine/contracts/examples/counter-define/src/lib.rs)
+
 You should see the following output:
+
 ```
 Success!
 ```
+
+Note: The deploy command is a convenience function combining multiple actions (`make`, `sign`,` send`) in the case of a single signature. For signing with multiple keys, see [Advanced usage](#advanced-usage) in this document . 
 
 ##### Step 6: Observe
 
-See the instructions [here](QUERYING.md).
+See the instructions [here](QUERYING.md).  
 
 
-##### Step 7: Deploy `countercall.wasm`
+##### Step 7: Call the counter contract
 
 Note: `--payment-amount` is used to define the maximum number of motes to spend on the execution of the deploy.
 ```
@@ -76,34 +76,89 @@ casperlabs-client \
     --host deploy.casperlabs.io \
     deploy \
     --private-key <path-to-private-key> \
-    --session $COUNTER_CALL
-    --payment-amount <int>
+    --session-name counter_inc \
+    --payment-amount 2000000
 ```
+
+`--session-name` tells the system to use a previous stored contract under the given name. In this case the `counter_define` wasm we deployed in Step 5 stored a contract under the name `counter_inc`, which we can now call.
 
 You should see the following output:
 ```
 Success!
 ```
 
-##### Alternative ways for creating, signing, and deploying contracts
+##### Step 8: Call a contract with arguments
 
-Every account can associate multiple keys with it and give each key a weight. The collective weight of signing keys decides whether an action of a certain type can be made. In order to collect the weight of different associated keys, a deploy has to be signed by corresponding private keys.
+```shell
+export TRANSFER="$(pwd)/target/wasm32-unknown-unknown/release/transfer_to_account.wasm"
 
-The `deploy` command is a convenience function combining multiple actions (make, sign, send) in the case of a single signature, but it does not allow for signing with multiple keys.
+casperlabs-client \
+    --host deploy.casperlabs.io \
+    deploy \
+    --private-key <path-to-new-private-key> \
+    --session $TRANSFER \
+	--session-args '[{"name" : "target", "value" : {"bytes_value" : "<base-16-public-key>"}}, {"name": "amount", "value" : {"long_value" : 1000}}]' \
+    --payment-amount 2000000
+```
 
-To make a deploy signed with multiple keys: first make the deploy with `make-deploy`, sign it with the keys calling `sign-deploy` for each key, and then send it to the node with `send-deploy`.
+where `<public-key-in-hex>` is the address to send the motes to.
 
-The following is a complete list of commands you can use when deploying contracts:
+Note: transfers can be done in a more convenient way using the `transfer` sub-command of the client, see `casperlabs-client transfer --help` for details.
+
+## Contract argument details
+
+Smart contracts can be parametrized. A list of contract arguments can be specified on command line when the contract is deployed.
+
+Client's `deploy` command accepts parameter `--session-args`that can be used to specify types and values of contract arguments as a serialized sequence of [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) values in a [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json), with binary data represented in Base16 format.
+
+Continuing from the example above, see Step 8
+
+Note: contract arguments are positional -- the `"name"` attribute is currently not used.
+However, we plan to change contract arguments to be keyword (named) arguments.
+The structure of the `Arg` protobuf message and its JSON serialized form is ready for this change.
+
+In a future release Contract API `get_arg` function will change to accept a string with a name of an argument instead of its index.
+
+**Supported types of contract arguments**
+
+
+| protobuf [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) | Contract API type | Example value in [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json)
+| ---------------  | ------------- | -------------------------------------
+| `int_value`      | `u32`         | `'[{"name": "amount", "value": {"int_value": 123456}}]'`
+| `long_value`     | `u64`         | `'[{"name": "amount", "value": {"long_value": 123456}}]'`
+| `big_int`        | `u512`        | `'[{"name": "amount", "value": {"big_int": {"value": "123456", "bit_width": 512}}}]'`
+| `string_value`   | `String`      | `'[{"name": "surname", "value": {"string_value": "Nakamoto"}}]'`
+| `optional_value` | `Option<T>`   | `'{"name": "maybe_number", "value": {"optional_value": {}}}` or  `{"name": "maybe_number", "value": {"optional_value": {"long_value": 1000000}}}'`
+| `hash`           | `Key::Hash`    | `'{"name": "my_hash", "value": {"key": {"hash": {"hash": "9d39b7fba47d07c1af6f711efe604a112ab371e2deefb99a613d2b3dcdfba414"}}}}'`
+| `address`        | `Key::Address` | `'{"name": "my_address", "value": {"key": {"address": {"account": "9d39b7fba47d07c1af6f711efe604a112ab371e2deefb99a613d2b3dcdfba414"}}}}'`
+| `uref`           | `Key::URef`    | `'{"name": "my_uref", "value": {"key": {"uref": {"uref": "9d39b7fba47d07c1af6f711efe604a112ab371e2deefb99a613d2b3dcdfba414", "access_rights": 5}}}}'`
+| `local`          | `Key::Local`   | `'{"name": "my_local", "value": {"key": {"local": {"hash": "9d39b7fba47d07c1af6f711efe604a112ab371e2deefb99a613d2b3dcdfba414"}}}}'`
+| `int_list`       | `Vec<i32>`         | `'{"name": "my_int_list", "value": {"int_list": {"values": [0, 1, 2]}}}'`
+| `string_list`    | `Vec<String>`         | `'{"name": "my_string_list", "value": {"string_list": {"values": ["A", "B", "C"]}}}'`
+
+Numeric values of `access_rights` in `uref` are defined in [`enum AccessRights in state.proto](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/state.proto#L58).
+
+## Advanced usage
+
+### Creating, signing, and deploying contracts 
+
+**Deploying contracts with multiple signatures**
+
+To make a deploy signed with multiple keys: first make the deploy with `make-deploy`, sign it with the keys calling `sign-deploy` for each key, and then send it to the node with `send-deploy`."
+
+Every account can associate multiple keys with it and give each a weight. Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys a deploy has to be signed by corresponding private keys. `deploy` command creates a deploy, signs it and deploys to the node but doesn't allow for signing with multiple keys. Therefore we split `deploy` into separate commands:
 
 * `make-deploy`  - creates a deploy from input parameters
 * `sign-deploy`  - signs a deploy with given private key
 * `print-deploy` - prints information of a deploy
 * `send-deploy`  - sends a deploy to CasperLabs node
-* `show-deploy`  - queries the status of a deploy (pending, success, error, etc.)
+* `show-deploy`  - queries the status of a deploy
 
 Commands read input deploy from both a file (`-i` flag) and STDIN. They can also write to both file and STDOUT.
 
-###### Example usage:
+See additional details about key management [here](https://github.com/CasperLabs/CasperLabs/blob/release-v0.12/docs/KEYS.md#generating-account-keys)
+
+Example usage:
 
 **Creating a deploy**
 ```
@@ -125,7 +180,38 @@ casperlabs-client \
     -o /deploys/deploy_1
 ```
 
+**Setting Time to Live of a Deploy** 
+
+```
+  casperlabs-client\
+  	--host deploy.casperlabs.io \
+		deploy \
+ 	 --ttl-millis <arg>
+```
+
+Specify a duration for which the deploy can be included in a block prior to expiration. 
+
+This value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block.
+
+Use the CasperLabs client `deploy` sub-command.
+
+`--ttl-millis` passes the argument set Time to live, Time (in milliseconds) that the deploy will remain valid for. If no parameter is specified, a default (defined in the Chainspec - Genesis block) will be used.
+
+The node will not accept deploys with `deploy.timestamp` greater than some configurable number of milliseconds in the future (relative to its current time). This maximum future time is configurable, deploys can only go into blocks after their `deploy.timestamp`. 
+
+**Setting Deploy Dependencies** 
+
+```
+casperlabs-client\
+ 	 --host deploy.casperlabs.io \
+   deploy \
+  	--dependencies <arg>...
+```
+
+ `--dependencies` passes the argument list of deploy hashes (base16 encoded) which must be executed before this deploy. This parameter provides a mechanism implemented to explicitly enforce an ordering to deploys. This is important since sometimes order matters. Use the CasperLabs client `deploy` sub-command.
+
 **Signing a deploy**
+
 ```
 casperlabs-client \
     --host localhost \
@@ -135,299 +221,59 @@ casperlabs-client \
 ```
 This will read a deploy to sign from STDIN and output signed deploy to STDOUT. There are `-i` and `-o` flags for, respectively, reading a deploy from a file and writing signed deploy to a file.
 
+Note that this step may be repeated multiple times to sign a deploy with multiple keys. This feature allows supporting multi-sig transactions out-of-the-box. See [Associated Keys and Weights](https://techspec.casperlabs.io/en/latest/implementation/accounts.html#associated-keys-and-weights) for more information about accounts and associated keys and how they can be used to set up multi-sig security on transactions.
+
 **Printing a deploy**
+
 ```
 casperlabs-client \
     --host localhost \
     print-deploy
 ```
-This will print information of a deploy into STDOUT. There are `--json` and `--bytes-standard` flags for, respectively, using standard JSON vs Protobuf text encoding and standard ASCII-escaped for Protobuf or Base64 for JSON bytes encoding vs custom Base16. The same set of flags is also available for all `show-*` and `query-state` commands.
+This will print information of a deploy into STDOUT. There are `--json` and `--bytes-standard` flags for, respectively, using standard JSON vs Protobuf text encoding and standard ASCII-escaped for Protobuf or Base64 for JSON bytes encoding vs custom Base16. The same set of flags also available for all `show-*` and `query-state` commands. 
 
-**Sending a deploy to the node**
+**Sending deploy to the node**
+
 ```
 casperlabs-client \
     --host localhost \
     send-deploy
 ```
-In the example above there is no `-i` argument, meaning that the signed deploy will be read from STDIN.
+In the example above there is no `-i` argument, meaning that signed deploy will be read from STDIN.
 
-Reading from STDIN and writing to STDOUT allows for piping output from one command to the input of another one ( commands are incomplete for better readability):
+Reading from STDIN and writing to STDOUT allows for piping output from one command to the input of another one (commands are incomplete for better readability):
 ```
 casperlabs-client make-deploy [arguments] | \
-casperlabs-client sign-deploy --private-key [private_key] --public-key [public_key] |\
+casperlabs-client sign-deploy --private-key [private_key] --public-key [public_key] | \
 casperlabs-client send-deploy
 ```
-
-For more detailed description about deploy commands, use the `--help` flag (`casper-client --help`).
-
-
-##### Step 8: Observe
-
-See the instructions [here](QUERYING.md).
+For more detailed description, use `--help` flag (`casper-client --help`).
 
 **Showing deploy status**
 
-To view the status of a deploy you can use the `show-deploy` command.
-
-For example:
 ```
 casperlabs-client\ 
-        --host deploy.casperlabs.io \ 
-        --port 40401 show-deploy <deploy-hash>
+ --host deploy.casperlabs.io \ 
+ --port 40401 show-deploy <deploy-hash>
 ```
 
-This will return a status (pending, processed, finalized, discarded as well as information about its execution (success or error with message), and the block(s) it is included in (if any).
+To view the status of a deploy you can use the `show-deploy` command. This will return a status (pending, processed, finalized, discarded as well as information about its execution (success or error with message), and the block(s) it is included in (if any).
 
 The following lists status' returned:
 
-* `PENDING`
-* `PROCESSED`
-* `FINALIZED`
-* `DISCARDED`
+***** `PENDING`
+
+***** `PROCESSED`
+
+***** `FINALIZED`
+
+***** `DISCARDED`
 
 See a description of state provided [here](https://github.com/CasperLabs/CasperLabs/blob/907c46b2c7dc36ad8944b1cd104238122dc2e4ad/protobuf/io/casperlabs/casper/consensus/info.proto#L54).
 
-You can also retrieve further information from our platform (with our APIs, et. al.). See additional details [here](QUERYING.md).
+You can also retrieve further information from our platform (APIs, et. al.). See additional details [here](QUERYING.md).
 
-###### Advanced deploy options
-
-**Stored contracts**
-
-A `store_function` that is part of the deployed contract's module can be saved on the blockchain with the Contract API `store_function`. This function becomes a stored contract that can later be called from another contract with `call_contract`, or used instead of a WASM file when creating a new deploy on the command line.
-
-**Storing contracts under a Key**
-
-There are two ways to store a contract under a Key: `store_function` stores a contract under a `Key::URef`, `store_function_at_hash` stores a contract under a `Key::Hash` -- a 256-bit unique identifier which is generated by the system. Both correspond to `--session-name` or `--payment-name`.
-
-
-For Example: `store_function`
- 
-``` 
- //create map of references for stored contract
-    let mut counter_urefs: BTreeMap<String, Key> = BTreeMap::new();
-    let pointer = store_function("counter_ext", counter_urefs);
-    Key::URef address("counter", &pointer.into());
-```
-The store_function stores the contract under a `Key::URef` associated with an address.
-
-It is important to note storing a contract under a `URef` allows the contract to be upgraded with the `upgrade_contract_at_uref` function. Whereas, when a contract is stored under a `Hash` it is immutable (that `Hash` will always point to exactly that contract).
-
-For Example: `store_function_at_hash`
- 
-```
-//create map of references for stored contract
-    let mut counter_urefs: BTreeMap<String, Key> = BTreeMap::new();
-    let pointer = store_function_at_hash("counter_ext", counter_urefs);
-    Key::Hash address("counter", &pointer.into());
-```
-The `store_function_at_hash` stores the contract under a `Key::Hash` associated with an address.
-
-
-**Associating a Key with a Name**
-
-There is one way to associate a Key with a human-readable name with `put_key`. This association (names) is valid only in the context where `put_key` is run.
-
-**Calling stored contracts**
-
-From the client, there are several ways you can execute code: as a direct deploy (see basic description of [deploy](https://github.com/CasperLabs/CasperLabs/blob/release-v0.11/docs/CONTRACTS.md#step-5-deploy-counterdefinewasm)), or a stored contract whereby payment and session contracts stored on the chain are called providing either a `hash`, `name`, or `uref` of the contract.
-
-You can call an existing contract stored on the blockchain using its address, or sending the arguments to the contract. The deploy command accepts a list of arguments for either (or both) of the payment and session contracts, as values of parameters `--session-args` and `--payment-args`.
-
-The Scala client takes both the contract WASM bytes and list of arguments in the Proto 3 JSON format,
-
-For Example:
-
-```
---session-args '[{``"name"``: ``"amount"``, ``"value"``: {``"long_value"``: ``123456``}}]
-```
-
-Note that `Standard Payment Code` is used as the default where no payment code is supplied for the deploy.
-
-**Contract address**
-
-Contract address is a cryptographic hash uniquely identifying a stored contract in the system. Thus, it can be used to call the stored contract directly when creating a deploy, e.g. on command line; or from another contract.
-
-**Calling a stored contract using its address**
-
-The `casperlabs-client` `deploy` command accepts argument `--session-hash` which can be used to create a deploy using a stored contract instead of a file with a compiled WASM module. Its value should be a base16 representation of the contract address.
-
-For example: `--session-hash 2358448f76c8b3a9e263571007998791a815e954c3c3db2da830a294ea7cba65`.
-
-Note that `--payment-hash` is an option equivalent to `--session-hash` but for specifying the address of the payment contract. Provide the `Key::Hash address` in `base-16` that a contract was previously stored under.
-
-For example:  Calling a stored contract by `--session-hash`
-```
-$ casperlabs-client --host $HOST deploy \     
-    --private-key $PRIVATE_KEY_PATH \ 
-    --payment-amount 10000000 \ 
-    --session-hash 2358448f76c8b3a9e263571007998791a815e954c3c3db2da830a294ea7cba65
-```
-
-The `store_function_at_hash` stores the serialized bytes of an exported function at an immutable address generated by the host. It corresponds to `--session-hash`, or `--payment-hash` (an option equivalent to `--session-hash` but for specifying the address of payment contract).
-
-
-**Calling a stored contract by name**
-
-For convenience, a contract address can be associated with a human readable name in the context of a user's account.
-
-You can provide the human readable name associated with some Key (`put_key`) that a contract was previously stored under in the same contract that calls either `store_function` or `store_function_at_hash` (this corresponds to `--session-name` or `--payment-name`)
-
-Note this association is only valid in the context where `put_key` is run.
-
-For Example:`store_function`
-
-The `store_function` stores the serialized bytes of an exported function under a `put_key` generated by the host.
-
-```
-//create map of references for stored contract
-	let mut counter_urefs: BTreeMap<String, Key> = BTreeMap::new();
-	let key_name = String::from(COUNT_KEY); counter_urefs.insert(key_name, counter_local_key.into());
-	let pointer = storage::store_function(COUNTER_EXT, counter_urefs); 
-	runtime::put_key(COUNTER_KEY, pointer.into());
-```
-
-In the example,  `COUNTER_EXT` is a function in the same module as the executing contract. The function is stored on blockchain with `store_function`. Next, a call to `put_key` associates the stored contract's address with a name `"COUNTER_KEY"`.
-
-For Example: `store_function_at_hash`
-The `store_function_at_hash` stores the serialized bytes of an exported function under a `put_key` generated by the host.
-
-```
-//create map of references for stored contract
-	let mut counter_urefs: BTreeMap<String, Key> = BTreeMap::new();
-	let key_name = String::from(COUNT_KEY); counter_urefs.insert(key_name, counter_local_key.into());
-	let pointer = storage::store_function_at_hash(COUNTER_EXT, counter_urefs); 
-	runtime::put_key(COUNTER_KEY, pointer.into());
-```
-
-In the example, `COUNTER_EXT` is a function in the same module as the executing contract. The function is stored on blockchain with `store_function_at_hash`.  Next, a call to `put_key` associates the stored contract's address with a name `"COUNTER_KEY"`.
-
-The `casperlabs-client` `deploy` command accepts argument `--session-name` which can be used to refer to a stored contract by its name. This option can be used to create a deploy with a stored contract acting as the deploy's session contract (the equivalent argument for payment contract is `--payment-name`).
-
-For example: `--session-name` 
-```
-$ casperlabs-client --host $HOST deploy \
-    --private-key $PRIVATE_KEY_PATH \
-    --payment-amount 10000000 \
-    --session-name counter_inc
-```
-The payment amount is stored under the session name "counter_inc"; store store a contract by sending the wasm (using `--session`), then call the contract by name/address (using `--session-name`/)
-
-Note that for a contract stored by `URef`, if you don't use a human readable name, you will get a forged `URef error`; instead, you must first call the `put_key` to persist the `URef` in the account, in which case you would use the `put_key` in the first place.
-
-
-###### Understanding the difference between calling a contract directly and with `call_contract`
-
-**Calling a contract with `call_contract`**
-
-When a contract is stored with `store_function`  there is a new context created for it, with initial content defined by the map passed to `store_function` as its second argument. Later, when the stored contract is called with `call_contract` it is executed in this context.
-
-**Calling a contract directly**
-In contrast, when the same stored contract is called directly,
-for example its address is passed to `--session-hash` argument of the `deploy` command, the contract will be executed in the context of the account that creates the deploy. The consequence of this is that stateful contracts designed to operate in a specific context may not work as expected when called directly. They may, for instance, attempt to read or modify a `URef` that they expect to exist in their context, but find it missing in the context that they are actually run in -- that is of the deployer's account.
-
-Note that one way to get around this (as this will likely change in the future), is to create a stateless "proxy" contract which essentially does `call_contract` and nothing else.
-
-For example: [define counter contract](https://github.com/CasperLabs/CasperLabs/tree/dev/execution-engine/contracts/examples/counter-define#deploy), increment the counter:
-```
-$ casperlabs-client --host $HOST deploy \
-    --private-key $PRIVATE_KEY_PATH \
-    --payment-amount 10000000 \
-    --session-name counter_inc
-```
-The counter contract example, stores an additional function for incrementing the counter. This function can be called directly by name `counter_inc`, in order to increment the counter without sending additional wasm.
-
-**Passing arguments to contracts**
-
-Smart contracts can be parametrized. A list of contract arguments can be specified on command line when the contract is deployed.
-
-When the contract code is executed it can access individual arguments by calling Contract API function `get_arg` with index of an argument. First argument is indexed with `0`.
-
-**Time to Live and Deploy Dependency**
-
-**Time to Live** specifies a duration for which the deploy can be included in a block prior to expiration. The node will not accept deploys with `deploy.timestamp` greater than some configurable number of milliseconds in the future (relative to its current time). This maximum future time is configurable -- this parameter is not at the protocol level since deploys can only go into blocks after their `deploy.timestamp`. Since individual nodes choose their own future cut-off, this is set by node operators, not users.
-
-This value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block.
-
-Use the CasperLabs client `deploy` sub-command.
-
-**For example:**
-```
-casperlabs-client\
-    --host deploy.casperlabs.io \
-        deploy \
-    --ttl-millis  <arg>
-```
-
-`--ttl-millis` passes the argument set Time to live, Time (in milliseconds) that the deploy will remain valid for. If no parameter is specified, a default (defined in the Chainspec - Genesis block) will be used.
-
-**Deploy Dependency** provides a parameter for a mechanism implemented to explicitly enforce an ordering to deploys. This is important since sometimes order matters.
-
-Use the CasperLabs client `deploy` sub-command.
-
-For example:
-```
-casperlabs-client\
-    --host deploy.casperlabs.io \
-        deploy \
-    --dependencies  <arg>...
-```
-
- `--dependencies`  passes the argument list of deploy hashes (base16 encoded) which must be executed before this deploy.
-
-**Command line client's syntax of contract arguments**
-
-Client's `deploy` command accepts parameter `--session-args`
-that can be used to specify types and values of contract arguments as a serialized sequence of [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) values in a [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json), with binary data represented in Base16 format.
-
-For example:
-
-`--session-args '[{"name": "amount", "value": {"long_value": 123456}}]'`.
-
-
-**Accessing arguments in contracts**
-
-The Contract API function `get_arg` allows you to access contract arguments via their indices `(get_args(0))`.
-
-For example:
-```
-get_arg("amount")
-```
-```
-let amount: u64 = get_arg(0);
-```
-This will deserialize the contract argument `amount` as a value of type `u64`.
-
-Note that types of the arguments specified when deploying and the types in the Rust code must match. The matching type for protobuf [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) type `long_value` is currently `u64`.
-
-The same can be achieved by declaring return type of `get_arg` explicitly.
-
-For example:
-
-```
-let amount = get_arg::<u64>(0);
-```
-
-**Supported types of contract arguments**
-
-
-| protobuf [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) | Contract API type | Example value in [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json)
-| ---------------  | ------------- | -------------------------------------
-| `int_value`      | `u32`         | `'[{"name": "amount", "value": {"int_value": 123456}}]'`
-| `long_value`     | `u64`         | `'[{"name": "amount", "value": {"long_value": 123456}}]'`
-| `big_int`        | `u512`        | `'[{"name": "amount", "value": {"big_int": {"value": "123456", "bit_width": 512}}}]'`
-| `string_value`   | `String`      | `'[{"name": "surname", "value": {"string_value": "Nakamoto"}}]'`
-| `optional_value` | `Option<T>`   | `'{"name": "maybe_number", "value": {"optional_value": {}}}` or  `{"name": "maybe_number", "value": {"optional_value": {"long_value": 1000000}}}'`
-| `hash`           | `Key::Hash`    | `'{"name": "my_hash", "value": {"key": {"hash": {"hash": "9d39b7fba47d07c1af6f711efe604a112ab371e2deefb99a613d2b3dcdfba414"}}}}'`
-| `address`        | `Key::Address` | `'{"name": "my_address", "value": {"key": {"address": {"account": "9d39b7fba47d07c1af6f711efe604a112ab371e2deefb99a613d2b3dcdfba414"}}}}'`
-| `uref`           | `Key::URef`    | `'{"name": "my_uref", "value": {"key": {"uref": {"uref": "9d39b7fba47d07c1af6f711efe604a112ab371e2deefb99a613d2b3dcdfba414", "access_rights": 5}}}}'`
-| `local`          | `Key::Local`   | `'{"name": "my_local", "value": {"key": {"local": {"hash": "9d39b7fba47d07c1af6f711efe604a112ab371e2deefb99a613d2b3dcdfba414"}}}}'`
-| `int_list`       | `Vec<i32>`         | `'{"name": "my_int_list", "value": {"int_list": {"values": [0, 1, 2]}}}'`
-| `string_list`    | `Vec<String>`         | `'{"name": "my_string_list", "value": {"string_list": {"values": ["A", "B", "C"]}}}'`
-
-Numeric values of `access_rights` in `uref` are defined in
-[`enum AccessRights in state.proto](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/state.proto#L58).
-
-####  Using a local standalone node
+###  Using a local standalone node
 
 If you are testing with a [local standalone node](NODE.md#running-a-single-node), you will need to change the `--host` argument:
 
@@ -441,6 +287,6 @@ casperlabs-client \
 
 You will also need to explicitly propose after making a deploy (or several deploys), in order for your deploys to be committed:
 
-```markdown
+```
 casperlabs-client --host 127.0.0.1 propose
 ```
