@@ -11,7 +11,7 @@
 * Build the [`casperlabs-client`](BUILD.md#build-the-client).
 
 If you build from source, you will need to add the build directories to your `PATH`, for example:
-```
+```powershell
 export PATH="<path-to-CasperLabs-repo>/client/target/universal/stage/bin:$PATH"
 ```
 Or you can run the client commands from the root directory of the repo, using explicit paths to the binaries.
@@ -19,7 +19,7 @@ Or you can run the client commands from the root directory of the repo, using ex
 ## Instructions
 
 ##### Step 1: Clone the [main repo](https://github.com/CasperLabs/CasperLabs/) to obtain the [example contracts](https://github.com/CasperLabs/CasperLabs/tree/dev/execution-engine/contracts/examples) and set up your toolchain
-```
+```shell
 git clone git@github.com:CasperLabs/CasperLabs.git
 cd CasperLabs/execution-engine
 rustup toolchain install $(cat rust-toolchain)
@@ -29,7 +29,7 @@ rustup target add --toolchain $(cat rust-toolchain) wasm32-unknown-unknown
 Source code of contract examples are currently located in `./execution-engine/contracts/examples` directory inside the main repo.
 
 ##### Step 2: Build the example contracts
-```
+```shell
 make build-example-contracts
 export COUNTER_DEFINE="$(pwd)/target/wasm32-unknown-unknown/release/counter_define.wasm"
 ```
@@ -44,7 +44,7 @@ Add coins to this account using the [faucet](https://clarity.casperlabs.io/#/fau
 
 ##### Step 5: Deploy `counterdefine.wasm`
 
-```
+```shell
 casperlabs-client \
     --host deploy.casperlabs.io \
     deploy \
@@ -53,11 +53,11 @@ casperlabs-client \
     --payment-amount 2000000
 ```
 
-Note: `--payment-amount` is used to define the maximum number of motes to spend on the execution of the deploy. In the example, 2,000,000 is the amount needed to execute the counter define contract. The source code for the contract used in this example can be found [here](https://github.com/CasperLabs/CasperLabs/blob/master/execution-engine/contracts/examples/counter-define/src/lib.rs)
+Note: `--payment-amount` is used to define the maximum number of motes to spend on the execution of the deploy. In the example, 2,000,000 is the amount needed to execute the counter define contract. The source code for the contract used in this example can be found [here](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/execution-engine/contracts/examples/counter-define/src/lib.rs).
 
 You should see the following output:
 
-```
+```shell
 Success!
 ```
 
@@ -71,7 +71,7 @@ See the instructions [here](QUERYING.md).
 ##### Step 7: Call the counter contract
 
 Note: `--payment-amount` is used to define the maximum number of motes to spend on the execution of the deploy.
-```
+```shell
 casperlabs-client \
     --host deploy.casperlabs.io \
     deploy \
@@ -109,18 +109,13 @@ Note: transfers can be done in a more convenient way using the `transfer` sub-co
 
 Smart contracts can be parametrized. A list of contract arguments can be specified on command line when the contract is deployed.
 
-Client's `deploy` command accepts parameter `--session-args`that can be used to specify types and values of contract arguments as a serialized sequence of [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) values in a [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json), with binary data represented in Base16 format.
+Client's `deploy` command accepts parameter `--session-args` that can be used to specify types and values of contract arguments as a serialized sequence of [Arg](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) values in a [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json), with binary data represented in Base16 format.
 
 Continuing from the example above, see Step 8
 
-Note: contract arguments are positional -- the `"name"` attribute is currently not used.
-However, we plan to change contract arguments to be keyword (named) arguments.
-The structure of the `Arg` protobuf message and its JSON serialized form is ready for this change.
-
-In a future release Contract API `get_arg` function will change to accept a string with a name of an argument instead of its index.
+<!--The Contract API `get_arg` accepts a string with a name of an argument instead of its index. `get_arg` accepts name of a parameter as a string, for example: `get_arg("amount")`-->
 
 **Supported types of contract arguments**
-
 
 | protobuf [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) | Contract API type | Example value in [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json)
 | ---------------  | ------------- | -------------------------------------
@@ -136,7 +131,7 @@ In a future release Contract API `get_arg` function will change to accept a stri
 | `int_list`       | `Vec<i32>`         | `'{"name": "my_int_list", "value": {"int_list": {"values": [0, 1, 2]}}}'`
 | `string_list`    | `Vec<String>`         | `'{"name": "my_string_list", "value": {"string_list": {"values": ["A", "B", "C"]}}}'`
 
-Numeric values of `access_rights` in `uref` are defined in [`enum AccessRights in state.proto](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/state.proto#L58).
+Numeric values of `access_rights` in `uref` are defined in [`enum AccessRights in state.proto](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/protobuf/io/casperlabs/casper/consensus/state.proto#L144).
 
 ## Advanced usage
 
@@ -144,9 +139,9 @@ Numeric values of `access_rights` in `uref` are defined in [`enum AccessRights i
 
 **Deploying contracts with multiple signatures**
 
-To make a deploy signed with multiple keys: first make the deploy with `make-deploy`, sign it with the keys calling `sign-deploy` for each key, and then send it to the node with `send-deploy`."
+To make a deploy signed with multiple keys: first make the deploy with `make-deploy`, sign it with the keys calling `sign-deploy` for each key, and then send it to the node with `send-deploy`.
 
-Every account can associate multiple keys with it and give each a weight. Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys a deploy has to be signed by corresponding private keys. `deploy` command creates a deploy, signs it and deploys to the node but doesn't allow for signing with multiple keys. Therefore we split `deploy` into separate commands:
+Every account can associate multiple keys with it and give each a weight. Collective weight of signing keys decides whether an action of certain type can be made. In order to collect weight of different associated keys a deploy has to be signed by corresponding private keys. The `deploy` command creates a deploy, signs it and deploys to the node but doesn't allow for signing with multiple keys. Therefore we split `deploy` into separate commands:
 
 * `make-deploy`  - creates a deploy from input parameters
 * `sign-deploy`  - signs a deploy with given private key
@@ -156,12 +151,15 @@ Every account can associate multiple keys with it and give each a weight. Collec
 
 Commands read input deploy from both a file (`-i` flag) and STDIN. They can also write to both file and STDOUT.
 
-See additional details about key management [here](https://github.com/CasperLabs/CasperLabs/blob/release-v0.12/docs/KEYS.md#generating-account-keys)
+For more detailed description, use `--help` flag (`casper-client --help`).
 
-Example usage:
+See additional details about generating account keys [here](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/docs/KEYS.md#generating-account-keys) and associated keys and weights [here](https://techspec.casperlabs.io/en/latest/implementation/accounts.html#associated-keys-and-weights).
 
-**Creating a deploy**
-```
+####Example usage
+
+#####Creating a deploy
+
+```shell
 casperlabs-client \
     --host localhost \
     make-deploy \
@@ -170,7 +168,7 @@ casperlabs-client \
     --from a1130120d27f6f692545858cc5c284b1ef30fe287caef648b0c405def88f543a
 ```
 This will write a deploy in binary format to STDOUT. It's possible to write it to a file, by supplying `-o` argument:
-```
+```shell
 casperlabs-client \
     --host localhost \
     make-deploy \
@@ -180,39 +178,39 @@ casperlabs-client \
     -o /deploys/deploy_1
 ```
 
-**Setting Time to Live of a Deploy** 
+**Setting Time to Live of a Deploy**
 
-```
+The node will not accept deploys with `deploy.timestamp` greater than some configurable number of milliseconds in the future (relative to its current time). This maximum future time is configurable. Deploys can only go into blocks after their `deploy.timestamp`. 
+
+Specify a duration for which the deploy can be included in a block prior to expiration. This value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block.
+
+Use the CasperLabs client `deploy` sub-command. `--ttl-millis` passes the argument set Time to live, Time (in milliseconds) that the deploy will remain valid for. 
+
+```shell
   casperlabs-client\
   	--host deploy.casperlabs.io \
 		deploy \
  	 --ttl-millis <arg>
 ```
 
-Specify a duration for which the deploy can be included in a block prior to expiration. 
+Note: If no parameter is specified, a default (defined in the Chainspec - [Genesis block](https://techspec.casperlabs.io/en/latest/theory/naive-blockchain.html#blockdag)) will be used.
 
-This value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block.
+**Setting Deploy Dependencies**
 
-Use the CasperLabs client `deploy` sub-command.
+This parameter provides a mechanism implemented to explicitly enforce an ordering to deploys. 
 
-`--ttl-millis` passes the argument set Time to live, Time (in milliseconds) that the deploy will remain valid for. If no parameter is specified, a default (defined in the Chainspec - Genesis block) will be used.
+Use the CasperLabs client `deploy` sub-command.`--dependencies` passes the argument list of deploy hashes (base16 encoded) which must be executed before this deploy. 
 
-The node will not accept deploys with `deploy.timestamp` greater than some configurable number of milliseconds in the future (relative to its current time). This maximum future time is configurable, deploys can only go into blocks after their `deploy.timestamp`. 
-
-**Setting Deploy Dependencies** 
-
-```
+```shell
 casperlabs-client\
  	 --host deploy.casperlabs.io \
    deploy \
   	--dependencies <arg>...
 ```
 
- `--dependencies` passes the argument list of deploy hashes (base16 encoded) which must be executed before this deploy. This parameter provides a mechanism implemented to explicitly enforce an ordering to deploys. This is important since sometimes order matters. Use the CasperLabs client `deploy` sub-command.
+#####Signing a deploy
 
-**Signing a deploy**
-
-```
+```sh
 casperlabs-client \
     --host localhost \
     sign-deploy \
@@ -223,18 +221,18 @@ This will read a deploy to sign from STDIN and output signed deploy to STDOUT. T
 
 Note that this step may be repeated multiple times to sign a deploy with multiple keys. This feature allows supporting multi-sig transactions out-of-the-box. See [Associated Keys and Weights](https://techspec.casperlabs.io/en/latest/implementation/accounts.html#associated-keys-and-weights) for more information about accounts and associated keys and how they can be used to set up multi-sig security on transactions.
 
-**Printing a deploy**
+#####Printing a deploy
 
-```
+```shell
 casperlabs-client \
     --host localhost \
     print-deploy
 ```
 This will print information of a deploy into STDOUT. There are `--json` and `--bytes-standard` flags for, respectively, using standard JSON vs Protobuf text encoding and standard ASCII-escaped for Protobuf or Base64 for JSON bytes encoding vs custom Base16. The same set of flags also available for all `show-*` and `query-state` commands. 
 
-**Sending deploy to the node**
+#####Sending deploy to the node
 
-```
+```shell
 casperlabs-client \
     --host localhost \
     send-deploy
@@ -242,34 +240,30 @@ casperlabs-client \
 In the example above there is no `-i` argument, meaning that signed deploy will be read from STDIN.
 
 Reading from STDIN and writing to STDOUT allows for piping output from one command to the input of another one (commands are incomplete for better readability):
-```
+```shell
 casperlabs-client make-deploy [arguments] | \
 casperlabs-client sign-deploy --private-key [private_key] --public-key [public_key] | \
 casperlabs-client send-deploy
 ```
-For more detailed description, use `--help` flag (`casper-client --help`).
+#####Showing deploy status
 
-**Showing deploy status**
-
-```
+```shell
 casperlabs-client\ 
  --host deploy.casperlabs.io \ 
  --port 40401 show-deploy <deploy-hash>
 ```
 
-To view the status of a deploy you can use the `show-deploy` command. This will return a status (pending, processed, finalized, discarded as well as information about its execution (success or error with message), and the block(s) it is included in (if any).
+ `show-deploy` allows the user to `View properties of a deploy known by Casper on an existing running node.` One of the properties of a deploy is its status. To view the status of a deploy you can use the `show-deploy` command. This will return a status (pending, processed, finalized, discarded as well as information about its execution (success or error with message), and the block(s) it is included in (if any).
 
 The following lists status' returned:
 
-***** `PENDING`
+- `PENDING`
+-  `PROCESSED`
+- `FINALIZED`
+-  `DISCARDED`
 
-***** `PROCESSED`
 
-***** `FINALIZED`
-
-***** `DISCARDED`
-
-See a description of state provided [here](https://github.com/CasperLabs/CasperLabs/blob/907c46b2c7dc36ad8944b1cd104238122dc2e4ad/protobuf/io/casperlabs/casper/consensus/info.proto#L54).
+See a description of state provided [here](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/protobuf/io/casperlabs/casper/consensus/info.proto#L54).
 
 You can also retrieve further information from our platform (APIs, et. al.). See additional details [here](QUERYING.md).
 
@@ -277,7 +271,7 @@ You can also retrieve further information from our platform (APIs, et. al.). See
 
 If you are testing with a [local standalone node](NODE.md#running-a-single-node), you will need to change the `--host` argument:
 
-```
+```shell
 casperlabs-client \
     --host 127.0.0.1 \
     deploy \
@@ -287,6 +281,7 @@ casperlabs-client \
 
 You will also need to explicitly propose after making a deploy (or several deploys), in order for your deploys to be committed:
 
-```
+```shell
 casperlabs-client --host 127.0.0.1 propose
 ```
+
