@@ -14,7 +14,7 @@ If you build from source, you will need to add the build directories to your `PA
 ```powershell
 export PATH="<path-to-CasperLabs-repo>/client/target/universal/stage/bin:$PATH"
 ```
-Or you can run the client commands from the root directory of the repo, using explicit paths to the binaries.
+Or you can run the client commands from the root directory of the repo using explicit paths to the binaries.
 
 ## Instructions
 
@@ -111,13 +111,13 @@ Smart contracts can be parametrized. A list of contract arguments can be specifi
 
 Client's `deploy` command accepts parameter `--session-args` that can be used to specify types and values of contract arguments as a serialized sequence of [Arg](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) values in a [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json), with binary data represented in Base16 format.
 
-Continuing from the example above, see Step 8
+Continuing from the example above, see Step 8.
 
-<!--The Contract API `get_arg` accepts a string with a name of an argument instead of its index. `get_arg` accepts name of a parameter as a string, for example: `get_arg("amount")`-->
+Note: The Contract API `get_arg` function accepts an index. For more detail see Contract API `get_arg` [here](https://docs.rs/casperlabs-contract/0.2.0/casperlabs_contract/contract_api/runtime/index.html).
 
 **Supported types of contract arguments**
 
-| protobuf [Arg](https://github.com/CasperLabs/CasperLabs/blob/ca35f324179c93f0687ed4cf67d887176525b73b/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) | Contract API type | Example value in [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json)
+| protobuf [Arg](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/protobuf/io/casperlabs/casper/consensus/consensus.proto#L91) | Contract API type | Example value in [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json)
 | ---------------  | ------------- | -------------------------------------
 | `int_value`      | `u32`         | `'[{"name": "amount", "value": {"int_value": 123456}}]'`
 | `long_value`     | `u64`         | `'[{"name": "amount", "value": {"long_value": 123456}}]'`
@@ -258,10 +258,9 @@ casperlabs-client\
 The following lists status' returned:
 
 - `PENDING`
--  `PROCESSED`
+- `PROCESSED`
 - `FINALIZED`
--  `DISCARDED`
-
+- `DISCARDED`
 
 See a description of state provided [here](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/protobuf/io/casperlabs/casper/consensus/info.proto#L54).
 
