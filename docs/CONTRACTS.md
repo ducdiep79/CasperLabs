@@ -1,6 +1,6 @@
 # Deploying Contracts
 
-The following provides a step-by-step set of examples including basic and advanced features to deploy contracts. Prior knowledge about permissions and execution semantics is recommended and can be found in our Techspec [here](https://github.com/CasperLabs/techspec/blob/master/implementation/accounts.rst). 
+The following provides a step-by-step set of examples including basic and advanced features to deploy contracts. Prior knowledge about permissions and execution semantics is recommended and can be found in our Techspec [here](https://github.com/CasperLabs/techspec/blob/master/implementation/accounts.rst).  
 
 ## Prerequisites
 
