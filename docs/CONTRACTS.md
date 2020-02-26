@@ -193,7 +193,7 @@ You can also retrieve further information from our platform (with our APIs, et. 
 
 **Stored contracts**
 
-A `store_function` that is part of the deployed contract's module can be saved on the blockchain with the Contract API `store_function`. This function becomes a stored contract that can later be called from another contract with `call_contract`, or used instead of a WASM file when creating a new deploy on the command line.
+A function that is part of a session code module can be saved on the blockchain with the Contract API `store_function`. This function becomes a stored contract that can later be called from another contract with `call_contract`, or used as payment/session code, instead of a wasm file, when creating a new deploy.
 
 **Storing contracts under a Key**
 
