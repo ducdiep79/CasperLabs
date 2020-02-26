@@ -10,6 +10,7 @@ use std::{
 
 use grpc::RequestOptions;
 use lmdb::DatabaseFlags;
+use log::LevelFilter;
 
 use engine_core::{
     engine_state::{
@@ -32,6 +33,7 @@ use engine_shared::{
     additive_map::AdditiveMap,
     contract::Contract,
     gas::Gas,
+    logging::{self, Settings, Style},
     newtypes::{Blake2bHash, CorrelationId},
     os::get_page_size,
     stored_value::StoredValue,
@@ -44,7 +46,7 @@ use engine_storage::{
     trie_store::lmdb::LmdbTrieStore,
 };
 use types::{
-    account::{PublicKey, PurseId},
+    account::PublicKey,
     bytesrepr::{self, ToBytes},
     CLValue, Key, URef, U512,
 };
@@ -86,9 +88,22 @@ pub struct WasmTestBuilder<S> {
     pos_contract_uref: Option<URef>,
 }
 
+impl<S> WasmTestBuilder<S> {
+    fn initialize_logging() {
+        let log_settings = Settings::new(LevelFilter::Warn).with_style(Style::HumanReadable);
+        let _ = logging::initialize(log_settings);
+    }
+}
+
 impl Default for InMemoryWasmTestBuilder {
     fn default() -> Self {
-        let engine_config = EngineConfig::new();
+        Self::initialize_logging();
+        let engine_config = if cfg!(feature = "turbo") {
+            EngineConfig::new().with_turbo(true)
+        } else {
+            EngineConfig::new()
+        };
+
         let global_state = InMemoryGlobalState::empty().expect("should create global state");
         let engine_state = EngineState::new(global_state, engine_config);
 
@@ -145,6 +160,7 @@ impl InMemoryWasmTestBuilder {
         engine_config: EngineConfig,
         post_state_hash: Vec<u8>,
     ) -> Self {
+        Self::initialize_logging();
         let engine_state = EngineState::new(global_state, engine_config);
         WasmTestBuilder {
             engine_state: Rc::new(engine_state),
@@ -160,6 +176,7 @@ impl LmdbWasmTestBuilder {
         data_dir: &T,
         engine_config: EngineConfig,
     ) -> Self {
+        Self::initialize_logging();
         let page_size = get_page_size().expect("should get page size");
         let global_state_dir = Self::create_and_get_global_state_dir(data_dir);
         let environment = Arc::new(
@@ -221,6 +238,7 @@ impl LmdbWasmTestBuilder {
         engine_config: EngineConfig,
         post_state_hash: Vec<u8>,
     ) -> Self {
+        Self::initialize_logging();
         let page_size = get_page_size().expect("should get page size");
         let global_state_dir = Self::create_and_get_global_state_dir(data_dir);
         let environment = Arc::new(
@@ -571,27 +589,27 @@ where
             .expect("should find PoS URef")
     }
 
-    pub fn get_purse_balance(&self, purse_id: PurseId) -> U512 {
+    pub fn get_purse_balance(&self, purse: URef) -> U512 {
         let mint = self.get_mint_contract_uref();
-        let purse_addr = purse_id.value().addr();
+        let purse_addr = purse.addr();
         let purse_bytes =
             ToBytes::to_bytes(&purse_addr).expect("should be able to serialize purse bytes");
         let balance_mapping_key = Key::local(mint.addr(), &purse_bytes);
-        let balance_uref = self
+        let base_key = self
             .query(None, balance_mapping_key, &[])
             .and_then(|v| CLValue::try_from(v).map_err(|error| format!("{:?}", error)))
             .and_then(|cl_value| cl_value.into_t().map_err(|error| format!("{:?}", error)))
             .expect("should find balance uref");
 
-        self.query(None, balance_uref, &[])
+        self.query(None, base_key, &[])
             .and_then(|v| CLValue::try_from(v).map_err(|error| format!("{:?}", error)))
             .and_then(|cl_value| cl_value.into_t().map_err(|error| format!("{:?}", error)))
             .expect("should parse balance into a U512")
     }
 
-    pub fn get_account(&self, addr: [u8; 32]) -> Option<Account> {
+    pub fn get_account(&self, public_key: PublicKey) -> Option<Account> {
         let account_value = self
-            .query(None, Key::Account(addr), &[])
+            .query(None, Key::Account(public_key), &[])
             .expect("should query account");
 
         if let StoredValue::Account(account) = account_value {

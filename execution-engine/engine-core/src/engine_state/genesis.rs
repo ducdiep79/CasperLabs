@@ -13,6 +13,7 @@ use types::{account::PublicKey, bytesrepr, Key, ProtocolVersion, U512};
 
 use crate::engine_state::execution_effect::ExecutionEffect;
 
+pub const PLACEHOLDER_KEY: Key = Key::Hash([0u8; 32]);
 pub const POS_BONDING_PURSE: &str = "pos_bonding_purse";
 pub const POS_PAYMENT_PURSE: &str = "pos_payment_purse";
 pub const POS_REWARDS_PURSE: &str = "pos_rewards_purse";
@@ -91,7 +92,7 @@ impl GenesisAccount {
 
 impl Distribution<GenesisAccount> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> GenesisAccount {
-        let public_key = PublicKey::new(rng.gen());
+        let public_key = PublicKey::ed25519_from(rng.gen());
 
         let mut u512_array = [0u8; 64];
         rng.fill_bytes(u512_array.as_mut());

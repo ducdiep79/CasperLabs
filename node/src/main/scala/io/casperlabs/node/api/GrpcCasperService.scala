@@ -27,15 +27,16 @@ import io.casperlabs.node.api.Utils.{
 import io.casperlabs.node.api.casper._
 import io.casperlabs.shared.Log
 import io.casperlabs.smartcontracts.ExecutionEngineService
+import io.casperlabs.smartcontracts.cltype.ProtoMappings
 import io.casperlabs.storage.block._
 import io.casperlabs.storage.deploy.DeployStorage
-import io.casperlabs.storage.dag.DagStorage
+import io.casperlabs.storage.dag.{DagStorage, FinalityStorage}
 import monix.eval.{Task, TaskLike}
 import monix.reactive.Observable
 
 object GrpcCasperService {
 
-  def apply[F[_]: Concurrent: TaskLike: Log: Metrics: MultiParentCasperRef: BlockStorage: ExecutionEngineService: DeployStorage: Validation: Fs2Compiler: DeployBuffer: DagStorage: EventStream](
+  def apply[F[_]: Concurrent: TaskLike: Log: Metrics: FinalityStorage: BlockStorage: ExecutionEngineService: DeployStorage: Validation: Fs2Compiler: DeployBuffer: DagStorage: EventStream](
       isReadOnlyNode: Boolean
   ): F[CasperGrpcMonix.CasperService] =
     BlockAPI.establishMetrics[F] *> Sync[F].delay {
@@ -146,7 +147,14 @@ object GrpcCasperService {
                                  query.pathSegments,
                                  protocolVersion
                                )
-            value <- Concurrent[F].fromEither(possibleResponse).handleErrorWith {
+            protoValue = possibleResponse.flatMap { storedValue =>
+              ProtoMappings
+                .toProto(storedValue)
+                .leftMap(
+                  err => SmartContractEngineError(s"Error with EE response $storedValue:\n$err")
+                )
+            }
+            value <- Concurrent[F].fromEither(protoValue).handleErrorWith {
                       case SmartContractEngineError(msg) =>
                         MonadThrowable[F].raiseError(InvalidArgument(msg))
                     }
@@ -200,18 +208,13 @@ object GrpcCasperService {
             request: GetLastFinalizedBlockInfoRequest
         ): Task[BlockInfo] =
           TaskLike[F].apply {
-            MultiParentCasperRef
-              .withCasper[F, BlockInfo](
-                _.lastFinalizedBlock.flatMap { block =>
-                  BlockAPI
-                    .getBlockInfo[F](
-                      Base16.encode(block.blockHash.toByteArray),
-                      request.view
-                    )
-                },
-                "Could not get last finalized block.",
-                MonadThrowable[F].raiseError(Unavailable("Casper instance not available yet."))
-              )
+            FinalityStorage[F].getLastFinalizedBlock.flatMap { blockHash =>
+              BlockAPI
+                .getBlockInfo[F](
+                  Base16.encode(blockHash.toByteArray),
+                  request.view
+                )
+            }
           }
 
         override def streamEvents(request: StreamEventsRequest): Observable[Event] =

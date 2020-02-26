@@ -13,6 +13,7 @@ import io.casperlabs.casper.helper.{
   BlockGenerator,
   DeployOps,
   HashSetCasperTestNode,
+  NoOpsEventEmitter,
   StorageFixture
 }
 import io.casperlabs.casper.helper.DeployOps.ChangeDeployOps
@@ -36,6 +37,8 @@ import io.casperlabs.crypto.Keys.PrivateKey
 import io.casperlabs.crypto.codec.Base16
 import io.casperlabs.crypto.signatures.SignatureAlgorithm.Ed25519
 import io.casperlabs.ipc.ChainSpec.DeployConfig
+import io.casperlabs.models.{ArbitraryConsensus, Message}
+import io.casperlabs.mempool.DeployBuffer
 import io.casperlabs.models.ArbitraryConsensus
 import io.casperlabs.models.BlockImplicits.BlockOps
 import io.casperlabs.p2p.EffectsTestInstances.LogicalTime
@@ -64,6 +67,7 @@ class ValidationTest
     with BlockGenerator
     with StorageFixture
     with ArbitraryConsensus {
+  implicit val emitter                                = NoOpsEventEmitter.create[Task]
   implicit val timeEff                                = new LogicalTime[Task](System.currentTimeMillis)
   override implicit val log: LogIO[Task] with LogStub = LogStub[Task]()
   implicit val raiseValidateErr                       = validation.raiseValidateErrorThroughApplicativeError[Task]
@@ -77,6 +81,8 @@ class ValidationTest
   // When raise errors we wrap them with Throwable so we need to do the same here.
   implicit def wrapWithThrowable[A <: InvalidBlock](err: A): Throwable =
     ValidateErrorWrapper(err)
+
+  implicit def `Long => MainRank`(in: Long): Message.MainRank = Message.asMainRank(in)
 
   implicit val consensusConfig = ConsensusConfig()
 
@@ -159,7 +165,7 @@ class ValidationTest
   implicit class ChangeBlockOps(b: Block) {
     def changeBlockNumber(n: Long): Block = {
       val header    = b.getHeader
-      val newHeader = header.withRank(n)
+      val newHeader = header.withJRank(n)
       // NOTE: blockHash should be recalculated.
       b.withHeader(newHeader)
     }
@@ -251,11 +257,14 @@ class ValidationTest
       ByteString.EMPTY,
       "casperlabs",
       1,
-      0,
+      Message.asJRank(1),
+      Message.asMainRank(1),
       pk,
       sk,
       Ed25519,
-      ByteString.EMPTY
+      ByteString.EMPTY,
+      0,
+      false
     )
     Validation.blockSignature[Task](block) shouldBeF true
   }
@@ -1290,6 +1299,9 @@ class ValidationTest
       implicit val deploySelection: DeploySelection[Task] = DeploySelection.create[Task](
         5 * 1024 * 1024
       )
+
+      implicit val deployBuffer = DeployBuffer.create[Task]("casperlabs", Duration.Zero)
+
       for {
         _ <- deployStorage.writer.addAsPending(deploys.toList)
         deploysCheckpoint <- ExecEngineUtil.computeDeploysCheckpoint[Task](
@@ -1297,7 +1309,7 @@ class ValidationTest
                               fs2.Stream.fromIterator[Task](deploys.toIterator),
                               System.currentTimeMillis,
                               ProtocolVersion(1),
-                              rank = 0,
+                              mainRank = 0,
                               upgrades = Nil
                             )
         DeploysCheckpoint(
@@ -1305,6 +1317,7 @@ class ValidationTest
           computedPostStateHash,
           bondedValidators,
           processedDeploys,
+          _,
           _
         ) = deploysCheckpoint
         block <- createAndStoreMessage[Task](

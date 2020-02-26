@@ -34,6 +34,7 @@ import io.casperlabs.shared.LogStub
 import scala.collection.immutable.Queue
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import io.casperlabs.casper.mocks.MockFinalityStorage
 
 @silent("is never used")
 class GossipServiceCasperTestNode[F[_]](
@@ -73,7 +74,7 @@ class GossipServiceCasperTestNode[F[_]](
     Broadcaster.fromGossipServices(Some(validatorId), relaying)
   implicit val deploySelection   = DeploySelection.create[F](5 * 1024 * 1024)
   implicit val derivedValidation = DeriveValidation.deriveValidationImpl[F]
-  implicit val eventEmitter      = TestEventEmitter.create[F]
+  implicit val eventEmitter      = NoOpsEventEmitter.create[F]
 
   // `addBlock` called in many ways:
   // - test proposes a block on the node that created it
@@ -131,6 +132,7 @@ trait GossipServiceCasperTestNodeFactory extends HashSetCasperTestNodeFactory {
     implicit val timeEff   = new LogicalTime[F]
     implicit val log       = LogStub[F](printEnabled = false)
     implicit val metricEff = new Metrics.MetricsNOP[F]
+    implicit val em        = NoOpsEventEmitter.create[F]
     implicit val nodeAsk   = makeNodeAsk(identity)(concurrentF)
     implicit val functorRaiseInvalidBlock =
       casper.validation.raiseValidateErrorThroughApplicativeError[F]
@@ -146,6 +148,8 @@ trait GossipServiceCasperTestNodeFactory extends HashSetCasperTestNodeFactory {
     initStorage() flatMap {
       case (blockStorage, dagStorage, deployStorage, finalityStorage) =>
         implicit val ds = deployStorage
+        implicit val bs = blockStorage
+        implicit val gs = dagStorage
         for {
           casperState  <- Cell.mvarCell[F, CasperState](CasperState())
           semaphoreMap <- SemaphoreMap[F, ByteString](1)
@@ -157,7 +161,8 @@ trait GossipServiceCasperTestNodeFactory extends HashSetCasperTestNodeFactory {
           _            <- blockStorage.put(genesis.blockHash, genesis, Map.empty)
           finalityDetector <- FinalityDetectorVotingMatrix
                                .of[F](dag, genesis.blockHash, faultToleranceThreshold)
-          multiParentFinalizer <- MultiParentFinalizer.empty(
+          implicit0(fs: FinalityStorage[F]) <- MockFinalityStorage[F](genesis.blockHash)
+          multiParentFinalizer <- MultiParentFinalizer.create(
                                    dag,
                                    genesis.blockHash,
                                    finalityDetector
@@ -219,6 +224,7 @@ trait GossipServiceCasperTestNodeFactory extends HashSetCasperTestNodeFactory {
         case (peer, sk) =>
           implicit val log       = LogStub[F](peer.host, printEnabled = false)
           implicit val metricEff = new Metrics.MetricsNOP[F]
+          implicit val emitter   = NoOpsEventEmitter.create[F]
           implicit val nodeAsk   = makeNodeAsk(peer)(concurrentF)
           implicit val functorRaiseInvalidBlock =
             casper.validation.raiseValidateErrorThroughApplicativeError[F]
@@ -245,16 +251,19 @@ trait GossipServiceCasperTestNodeFactory extends HashSetCasperTestNodeFactory {
           initStorage() flatMap {
             case (blockStorage, dagStorage, deployStorage, finalityStorage) =>
               implicit val ds = deployStorage
+              implicit val bs = blockStorage
+              implicit val gs = dagStorage
               for {
                 casperState <- Cell.mvarCell[F, CasperState](
                                 CasperState()
                               )
-                semaphoreMap     <- SemaphoreMap[F, ByteString](1)
-                semaphore        <- Semaphore[F](1)
-                _                <- blockStorage.put(genesis.blockHash, genesis, Map.empty)
-                dag              <- dagStorage.getRepresentation
-                finalityDetector <- FinalityDetectorVotingMatrix.of[F](dag, genesis.blockHash, 0.1)
-                multiParentFinalizer <- MultiParentFinalizer.empty(
+                semaphoreMap                      <- SemaphoreMap[F, ByteString](1)
+                semaphore                         <- Semaphore[F](1)
+                _                                 <- blockStorage.put(genesis.blockHash, genesis, Map.empty)
+                dag                               <- dagStorage.getRepresentation
+                finalityDetector                  <- FinalityDetectorVotingMatrix.of[F](dag, genesis.blockHash, 0.1)
+                implicit0(fs: FinalityStorage[F]) <- MockFinalityStorage[F](genesis.blockHash)
+                multiParentFinalizer <- MultiParentFinalizer.create(
                                          dag,
                                          genesis.blockHash,
                                          finalityDetector
