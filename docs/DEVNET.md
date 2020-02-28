@@ -44,19 +44,15 @@ casperlabs-client \
         --private-key account.private.key
 ```
 
-You can query the outcome of deploys using `casperlabs-client`.
-
-For example:
+You can query the outcome of deploys using `casperlabs-client`:
 
 ```shell
 casperlabs-client\
-    	--host deploy.casperlabs.io \
-    	--port 40401 show-deploy 
+        --host deploy.casperlabs.io \
+        --port 40401 show-deploy <deploy-hash>
 ```
 
-Note: To add parameters for Time to Live and Deploy Dependencies, follow instructions [here](CONTRACTS.md#creating-a-deploy).
-
-See parameters in `casperlabs-client deploy --help`
+For more details on deploys, see the available CLI arguments with `casperlabs-client deploy --help`, and further documentation in [CONTRACTS.md](CONTRACTS.md).
 
 ##### Step 4: Bonding
 
