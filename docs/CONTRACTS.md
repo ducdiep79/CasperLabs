@@ -13,7 +13,7 @@ The following provides a step-by-step set of examples including basic and advanc
 * Build the [`casperlabs-client`](BUILD.md#build-the-client).
 
 If you build from source, you will need to add the build directories to your `PATH`, for example:
-```powershell
+```shell
 export PATH="<path-to-CasperLabs-repo>/client/target/universal/stage/bin:$PATH"
 ```
 Or you can run the client commands from the root directory of the repo using explicit paths to the binaries.
@@ -28,7 +28,7 @@ rustup toolchain install $(cat rust-toolchain)
 rustup target add --toolchain $(cat rust-toolchain) wasm32-unknown-unknown
 ```
 
-Source code of contract examples are currently located in `./execution-engine/contracts/examples` directory inside the main repo, [see](https://github.com/CasperLabs/CasperLabs/tree/v0.14.0/execution-engine/contracts/examples).
+Source code of contract examples are currently located in `./execution-engine/contracts/examples` directory inside the main repo as follows [here](https://github.com/CasperLabs/CasperLabs/tree/v0.14.0/execution-engine/contracts/examples).
 
 ##### Step 2: Build the example contracts
 ```shell
@@ -40,9 +40,9 @@ export COUNTER_DEFINE="$(pwd)/target/wasm32-unknown-unknown/release/counter_defi
 
 Create an account, which automatically creates a new keypair. This keypair should be downloaded to the machine where you will deploy contracts.
 
-##### Step 4: Add coins to this account
+##### Step 4: Add motes to this account
 
-You can add coins to this account using the [faucet](https://clarity.casperlabs.io/#/faucet).
+You can add [motes](https://github.com/CasperLabs/techspec/blob/master/implementation/tokens.rst#divisibility-of-tokens) to this account using the [faucet](https://clarity.casperlabs.io/#/faucet). Select the account key name associated with the account you want to add motes to and Request Tokens.
 
 ##### Step 5: Deploy `counterdefine.wasm`
 
@@ -69,7 +69,7 @@ Note: The deploy command is a convenience function combining multiple actions (`
 
 ##### Step 6: Observe
 
-See the instructions [here](QUERYING.md).  
+See the instructions [here](QUERYING.md).
 
 
 ##### Step 7: Call the counter contract
@@ -94,7 +94,7 @@ Note:  when a contract is stored under a `Hash` it is immutable (that `Hash` wil
 For details about storage see the Contract API [here](https://docs.rs/casperlabs-contract/0.2.0/casperlabs_contract/contract_api/storage/index.html).
 
 You should see the following output:
-```
+```shell
 Success!
 ```
 
@@ -121,8 +121,6 @@ Note: Transfers can be done in a more convenient way using the `transfer` sub-co
 Smart contracts can be parametrized. A list of contract arguments can be specified on command line when the contract is deployed.
 
 The client's `deploy` command accepts parameter `--session-args` that can be used to specify types and values of contract arguments as a serialized sequence of [Arg](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/protobuf/io/casperlabs/casper/consensus/consensus.proto#L78) values in a [protobuf JSON format](https://developers.google.com/protocol-buffers/docs/proto3#json), with binary data represented in Base16 format.
-
-Continuing from the example above, see [Step 8](#Step 8: Call a contract with arguments)
 
 Note: contract arguments are positional, and so the `"name"` attribute is currently not used. However, we plan to change contract arguments to be keyword (named) arguments. The structure of the `Arg` protobuf message and its JSON serialized form is ready for this change.
 
@@ -178,7 +176,8 @@ casperlabs-client \
     --payment payment-code.wasm \
     --from a1130120d27f6f692545858cc5c284b1ef30fe287caef648b0c405def88f543a
 ```
-This will write a deploy in binary format to STDOUT. It's possible to write it to a file, by supplying `-o` argument:
+You should see the following output:
+
 ```shell
 casperlabs-client \
     --host localhost \
@@ -189,13 +188,9 @@ casperlabs-client \
     -o /deploys/deploy_1 
 ```
 
-Execute the code from the client providing the wasm directly, i.e. store store a contract by sending the wasm using `--session` (this corresponds to `--session` or `--payment`, depending on what execution phase you want the code to be used for). 
+This will write a deploy in binary format to STDOUT. It's possible to write it to a file, by supplying `-o` argument.
 
-Provide the `Key::Hash` address in base-16 that a contract was previously stored under via `store_function_at_hash` (this corresponds to `--session-hash` or `--payment-hash`).
-
-Note: 
-
-**Time to Live of a Deploy**
+**Time to live of a deploy**
 
 ```shell
   casperlabs-client\
@@ -204,13 +199,11 @@ Note:
  	    --ttl-millis <arg>
 ```
 
-Specify a duration for which the deploy can be included in a block prior to expiration. The node will not accept deploys with `deploy.timestamp` greater than some configurable number of milliseconds in the future (relative to its current time). This maximum future time is configurable -- this parameter is not at the protocol level since deploys can only go into blocks after their `deploy.timestamp`. Individual nodes choose their own future cut-off, so this parameter is set by node operators, not users.
+Specify a duration for which a deploy can be included in a block prior to expiration. Use the CasperLabs client `deploy` sub-command. `--ttl-millis` passes the argument set Time to live, Time (in milliseconds relative to its current time) that the deploy will remain valid for according to the protocol-level maximum accepted value, and node-local minimum accepted value. If no parameter is specified, a default (defined in the Chainspec - [Genesis block](https://github.com/CasperLabs/CasperLabs/blob/v0.14.0/node/src/main/resources/chainspec/genesis/manifest.toml#L27)) will be used.
 
-Use the CasperLabs client `deploy` sub-command. `--ttl-millis` passes the argument set Time to live, Time (in milliseconds) that the deploy will remain valid for (this value may be adjusted depending on the tolerance for storing deploys in the deploy buffer for some time before being able to include them in a block).
+Note: Individual nodes choose their own future cut-off, so this parameter is set by node operators, not users.
 
-Note: If no parameter is specified, a default (defined in the Chainspec - [Genesis block](https://github.com/CasperLabs/techspec/blob/master/theory/naive-blockchain.rst#blockdag)) will be used.
-
-**Deploy Dependencies**
+**Deploy dependencies**
 
 ```shell
 casperlabs-client\
@@ -223,7 +216,7 @@ This parameter provides a mechanism implemented to explicitly enforce an orderin
 
 #####Signing a deploy
 
-```sh
+```shell
 casperlabs-client \
     --host localhost \
     sign-deploy \

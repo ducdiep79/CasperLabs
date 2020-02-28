@@ -44,9 +44,23 @@ casperlabs-client \
         --private-key account.private.key
 ```
 
+You can query the outcome of deploys using `casperlabs-client`.
+
+For example:
+
+```shell
+casperlabs-client\
+    	--host deploy.casperlabs.io \
+    	--port 40401 show-deploy 
+```
+
+Note: To add parameters for Time to Live and Deploy Dependencies, follow instructions [here](CONTRACTS.md#creating-a-deploy).
+
+See parameters in `casperlabs-client deploy --help`
+
 ##### Step 4: Bonding
 
-Follow the instructions in [NODE.md](NODE.md) for connecting to the CasperLabs network. Once bonded, you can use the CasperLabs client with your local node to deploy code and propose blocks on the devnet.
+Follow the instructions [here](NODE.md) for connecting to the CasperLabs network. Once bonded, you can use the CasperLabs client with your local node to deploy code and propose blocks on the devnet.
 
 For example:
 
@@ -61,20 +75,6 @@ casperlabs-client \
         --host localhost \
         propose
 ```
-
-You can query the outcome of deploys using `casperlabs-client`.
-
-For example:
-
-```shell
-casperlabs-client\
-    	--host deploy.casperlabs.io \
-    	--port 40401 show-deploy 
-```
-
-Add parameters for Time to Live and Deploy Dependencies, follow instructions [here](CONTRACTS.md#creating-a-deploy).
-
-See parameters in `casperlabs-client deploy --help`
 
 ##### Step 5: Unbonding
 
