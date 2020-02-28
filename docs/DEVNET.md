@@ -56,7 +56,7 @@ For more details on deploys, see the available CLI arguments with `casperlabs-cl
 
 ##### Step 4: Bonding
 
-Follow the instructions [here](NODE.md) for connecting to the CasperLabs network. Once bonded, you can use the CasperLabs client with your local node to deploy code and propose blocks on the devnet.
+Follow the instructions [here](NODE.md/#running-a-validator-on-the-casperLabs-network) for connecting to the CasperLabs network. Once bonded, you can use the CasperLabs client with your local node to deploy code and propose blocks on the devnet.
 
 For example:
 
@@ -74,7 +74,7 @@ casperlabs-client \
 
 ##### Step 5: Unbonding
 
-Follow instructions [here](NODE.md#step-6-start-the-node) for stopping a bonded validator.
+Follow instructions [here](NODE.md#stopping-a-bonded-validator) for stopping a bonded validator.
 
 ## Notes
 This quick start gives the simplest set of instructions for getting started on the CasperLabs devnet. More advanced users may wish to take other approaches to some of the steps listed above.

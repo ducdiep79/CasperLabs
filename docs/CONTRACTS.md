@@ -38,11 +38,11 @@ export COUNTER_DEFINE="$(pwd)/target/wasm32-unknown-unknown/release/counter_defi
 
 ##### Step 3: Create an account at [clarity.casperlabs.io](https://clarity.casperlabs.io)
 
-Create an account, which automatically creates a new keypair. This keypair should be downloaded to the machine where you will deploy contracts.
+Create an account with an account key, which automatically creates a new keypair. This keypair should be downloaded to the machine where you will deploy contracts.
 
 ##### Step 4: Add motes to this account
 
-You can add [motes](https://github.com/CasperLabs/techspec/blob/master/implementation/tokens.rst#divisibility-of-tokens) to this account using the [faucet](https://clarity.casperlabs.io/#/faucet). Select the account key name associated with the account you want to add motes to and Request Tokens.
+You can add [motes](https://github.com/CasperLabs/techspec/blob/master/implementation/tokens.rst#divisibility-of-tokens) to this account using the [faucet](https://clarity.casperlabs.io/#/faucet). Select the account key associated with the account you want to add motes to and click "Request Tokens".
 
 ##### Step 5: Deploy `counterdefine.wasm`
 
